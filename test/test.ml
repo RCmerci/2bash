@@ -79,8 +79,7 @@ let compile_statement_1 _ctx =
 
 let compile_statements_1 _ctx =
   let ctx = Compile.make_ctx in
-  Compile.compile_statements ctx fixture_stats |> Ir.show_statements
-  |> Out_channel.print_endline
+  Compile.compile_statements ctx fixture_stats |> ignore
 
 
 let suite =
