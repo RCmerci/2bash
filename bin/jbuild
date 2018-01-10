@@ -1,0 +1,8 @@
+(jbuild_version 1)
+
+(executable
+ ((name sbash)
+  (public_name 2bash)
+  (libraries (core
+  	      sbash_lib))
+  (package 2bash)))

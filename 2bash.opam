@@ -1,0 +1,17 @@
+
+opam-version: "1.2"
+name: "bt-lib"
+version: "0.1"
+maintainer: "RCmerci <rcmerci@gmail.com>"
+authors: "RCmerci <rcmerci@gmail.com>"
+homepage: ""
+bug-reports: ""
+license: ""
+dev-repo: "https://xxxxx.git"
+build: [
+  ["jbuilder" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "jbuilder" {build}
+]
+run-test: ["jbuilder" "test" "-p" name "-j" jobs]

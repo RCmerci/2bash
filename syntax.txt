@@ -1,0 +1,72 @@
+
+arg_list = value ',' arg_list
+	 | value
+
+bool = true
+     | false
+string = "<char>*"
+num = -?[1-9][0-9]*
+
+list = '[' arg_list ']'
+
+symbol = [a-Z][a-Z0-9_]*
+
+symbol_list = symbol ',' symbol_list
+	    | symbol
+op     = +
+       | -
+       | *
+       | /
+       | >
+       | <
+       | ==
+       | >=
+       | <>
+       | !=
+       | <=
+
+
+fun_call = symbol '(' ')'
+	 | symbol '(' arg_list  ')'
+	 | '(' fun_call	')'
+
+basic_value = num
+	    | string
+	    | list
+	    | bool
+	    | symbol
+
+
+op_value = value op op_value
+	 | value op value
+	 | '(' op_value ')'
+
+value = op_value
+      | fun_call
+      | basic_value
+
+;;;;statements follows
+
+
+assignment = symbol '=' value ';'
+if = 'if' '(' value ')' '{' statements '}'
+   | 'if' '(' value ')' '{' statements '}' 'else' '{' statements '}'
+
+for = 'for' '(' symbol 'in' value ')' '{' statements '}'
+
+while = 'while' '(' value ')' '{' statements '}'
+
+function = 'fun' '(' symbol_list ')' '{' statements '}'
+
+return = 'return' value
+
+statement = assignment
+	  | if
+	  | for
+	  | while
+	  | function
+	  | return
+	  | value ';'
+
+statements = statement statements
+	   | statement
