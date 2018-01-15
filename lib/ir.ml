@@ -1,20 +1,36 @@
+type tp =
+  | Num_type
+  | Str_type
+  | List_type of tp
+  | Bool_type
+  | Unknown_type
+  [@@deriving show]
+
+(* Indefinite:
+   e.g. printf
+ *)
+type fun_tp =
+  [`Normal of tp list * tp | `Indefinite of tp list * tp]
+  [@@deriving show]
+
 type num_binary =
   | Num of int
   | Num_binary of (num_binary_op * num_binary * num_binary)
-  | Num_left_value of leftvalue
+  | Num_leftvalue_binary of (num_binary_op * leftvalue * leftvalue)
   [@@deriving show]
 
 and num_binary_op = Plus | Minus | Mul | Div [@@deriving show]
 
 and leftvalue =
-  | Identifier of string
-  | ListAccess of (leftvalue * num_binary)
+  (* (name, type, local) *)
+  | Identifier of (string * tp * bool)
+  | ListAccess of ((leftvalue * num_binary) * tp)
   [@@deriving show]
 
 and str_binary =
   | Str of string
   | Str_binary of (str_binary_op * str_binary * str_binary)
-  | Str_left_value of leftvalue
+  | Str_leftvalue_binary of (str_binary_op * leftvalue * leftvalue)
   [@@deriving show]
 
 and str_binary_op = Str_plus [@@deriving show]
@@ -24,25 +40,25 @@ and bool_binary =
   | Num_bool_binary of (bool_binary_op * num_binary * num_binary)
   | Str_bool_binary of (bool_binary_op * str_binary * str_binary)
   | Bool_bool_binary of (bool_binary_op * bool_binary * bool_binary)
-  | Bool_left_value of leftvalue
+  | Bool_leftvalue_binary of (bool_binary_op * leftvalue * leftvalue)
   [@@deriving show]
 
 and bool_binary_op = Gt | Lt | Ge | Le | Neq | Eq [@@deriving show]
 
 and list_binary =
-  | List of value list
   | List_binary of (list_binary_op * list_binary * list_binary)
-  | List_left_value of leftvalue
+  | List_leftvalue_binary of (list_binary_op * leftvalue * leftvalue)
   [@@deriving show]
 
 and list_binary_op = List_plus [@@deriving show]
 
-and value =
+type value =
   | Left_value of leftvalue
   | Num_value of num_binary
   | Str_value of str_binary
   | Bool_value of bool_binary
-  | List_value of list_binary
+  | List_binary_value of list_binary
+  | List of value list
   | Fun_call of (string * value list)
   [@@deriving show]
 
@@ -52,7 +68,7 @@ and statement =
   | If_else of (value * statements * statements)
   | For of (string * value * statements)
   | While of (value * statements)
-  | Fun_def of (string * string list * statements)
+  | Fun_def of (string * string list * statements * fun_tp)
   | Return of value
   | Value of value
   [@@deriving show]

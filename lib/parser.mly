@@ -35,6 +35,8 @@ open Syntax
 %token IN
 %token RETURN
 %token COMMA
+%token ARROW
+%token COLON
 %token EOF
 %left GE LE NEQ EQ GT LT STRING_PLUS LIST_PLUS
 %left PLUS MINUS
@@ -68,13 +70,19 @@ statement:
       {For (s, v, s1)}
     | WHILE; LPAREN; v = value; RPAREN; LBRACE; s = statements; RBRACE
       {While (v, s)}
-    | FUNCTION; n = SYMBOL; LPAREN; s = symbol_list; RPAREN; LBRACE; s1 = statements; RBRACE
-      {Function (n, s, s1)}
+    | FUNCTION; n = SYMBOL; LPAREN; s = symbol_list; RPAREN;COLON; t = fun_type; LBRACE; s1 = statements; RBRACE
+      {Function (n, s, s1, t)}
     | RETURN; v = value; SEMICOLON
       {Return v}
     | v = value; SEMICOLON
       {Value v}
-;    
+;
+fun_type:
+    | s = SYMBOL; ARROW; sl = fun_type
+      {s :: sl}
+    | s = SYMBOL
+      {[s]}
+
 symbol_list:
     | s = SYMBOL; COMMA; sl = symbol_list
       {s :: sl}

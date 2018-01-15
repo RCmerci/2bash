@@ -68,6 +68,10 @@ module Make (Content : Content) = struct
     else Some (Option.value_exn data, scope)
 
 
+  let find_local scope key =
+    Option.(Content.find scope.map key >>= fun e -> return (e, scope))
+
+
   let update scope key data =
     let r = find scope key in
     let open Option in

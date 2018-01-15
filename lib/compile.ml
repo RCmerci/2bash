@@ -1,13 +1,19 @@
 open Core
 open Syntax
 
+exception Compile_err of string
+
 type context =
   { mutable scope: Ir.statement Scope.ListScope.t
+  ; mutable local_vars: unit Scope.StrMapScope.t
   ; mutable gen_var: int
   ; mutable result_statements: Ir.statement list }
 
-let make_ctx =
-  {scope= Scope.ListScope.make (); gen_var= 0; result_statements= []}
+let make_ctx () =
+  { scope= Scope.ListScope.make ()
+  ; gen_var= 0
+  ; result_statements= []
+  ; local_vars= Scope.StrMapScope.make () }
 
 
 let new_scope ctx =
@@ -40,6 +46,31 @@ let generate_tmp_var ctx =
   "_var_" ^ Int.to_string origin
 
 
+let add_local_vars ctx vars =
+  List.map vars ~f:(fun var -> Scope.StrMapScope.add ctx.local_vars var ())
+  |> ignore
+
+
+let is_local_var ctx var =
+  Option.is_some (Scope.StrMapScope.find ctx.local_vars var)
+
+
+let string_to_tp s =
+  let replace_spaces s =
+    String.split_on_chars ~on:[' '; '\t'] s
+    |> List.filter ~f:(fun e -> e <> "") |> String.concat ~sep:" "
+  in
+  let s' = String.strip s |> replace_spaces in
+  match s' with
+  | "num" -> Ir.Num_type
+  | "string" -> Ir.Str_type
+  | "bool" -> Ir.Bool_type
+  | "num list" -> Ir.List_type Ir.Num_type
+  | "string list" -> Ir.List_type Ir.Str_type
+  | "bool list" -> Ir.List_type Ir.Bool_type
+  | _ -> raise (Compile_err ("unsupported type: " ^ s'))
+
+
 (*
    extract_leftvalue:
    1. false:
@@ -61,29 +92,40 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
         let () =
           add_statement ctx
             (Ir.Assignment
-               (Ir.Identifier tmp_var, Ir.Fun_call (symbol, value_l')))
+               ( Ir.Identifier
+                   (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+               , Ir.Fun_call (symbol, value_l') ))
         in
-        Ir.Left_value (Ir.Identifier tmp_var)
+        Ir.Left_value
+          (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
       else Ir.Fun_call (symbol, value_l')
   | Basic_value v ->
+      let is_symbol v = match v with Symbol _ -> true | _ -> false in
       let value' =
         match v with
         | Num num -> Ir.Num_value (Ir.Num num)
         | String s -> Ir.Str_value (Ir.Str s)
         | Bool v -> Ir.Bool_value (Ir.Bool v)
         | List vl ->
-            Ir.List_value
-              (Ir.List
+            Ir.List
+              (List.rev
                  (List.fold vl ~init:[] ~f:(fun r v ->
                       compile_value ~extract_leftvalue:false ctx v :: r )))
-        | Symbol v -> Ir.Left_value (Ir.Identifier v)
+        | Symbol v ->
+            Ir.Left_value
+              (Ir.Identifier (v, Ir.Unknown_type, is_local_var ctx v))
       in
-      if extract_leftvalue then
+      if extract_leftvalue && not (is_symbol v) then
         let tmp_var = generate_tmp_var ctx in
         let () =
-          add_statement ctx (Ir.Assignment (Ir.Identifier tmp_var, value'))
+          add_statement ctx
+            (Ir.Assignment
+               ( Ir.Identifier
+                   (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+               , value' ))
         in
-        Ir.Left_value (Ir.Identifier tmp_var)
+        Ir.Left_value
+          (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
       else value'
   | Op_value Op (v1, op, v2) ->
       let v1' = compile_value ~extract_leftvalue:true ctx v1 in
@@ -91,62 +133,43 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
       let result_value =
         match (v1', v2', op) with
         | Left_value v1, Left_value v2, String_plus ->
-            Ir.Str_value
-              (Ir.Str_binary
-                 (Ir.Str_plus, Ir.Str_left_value v1, Ir.Str_left_value v2))
+            Ir.Str_value (Ir.Str_leftvalue_binary (Ir.Str_plus, v1, v2))
         | Left_value v1, Left_value v2, List_plus ->
-            Ir.List_value
-              (Ir.List_binary
-                 (Ir.List_plus, Ir.List_left_value v1, Ir.List_left_value v2))
+            Ir.List_binary_value
+              (Ir.List_leftvalue_binary (Ir.List_plus, v1, v2))
         | Left_value v1, Left_value v2, Plus ->
-            Ir.Num_value
-              (Ir.Num_binary
-                 (Ir.Plus, Ir.Num_left_value v1, Ir.Num_left_value v2))
+            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Plus, v1, v2))
         | Left_value v1, Left_value v2, Minus ->
-            Ir.Num_value
-              (Ir.Num_binary
-                 (Ir.Minus, Ir.Num_left_value v1, Ir.Num_left_value v2))
+            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Minus, v1, v2))
         | Left_value v1, Left_value v2, Mul ->
-            Ir.Num_value
-              (Ir.Num_binary
-                 (Ir.Mul, Ir.Num_left_value v1, Ir.Num_left_value v2))
+            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Mul, v1, v2))
         | Left_value v1, Left_value v2, Div ->
-            Ir.Num_value
-              (Ir.Num_binary
-                 (Ir.Div, Ir.Num_left_value v1, Ir.Num_left_value v2))
+            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Div, v1, v2))
         | Left_value v1, Left_value v2, Gt ->
-            Ir.Bool_value
-              (Ir.Bool_bool_binary
-                 (Ir.Gt, Ir.Bool_left_value v1, Ir.Bool_left_value v2))
+            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Gt, v1, v2))
         | Left_value v1, Left_value v2, Lt ->
-            Ir.Bool_value
-              (Ir.Bool_bool_binary
-                 (Ir.Lt, Ir.Bool_left_value v1, Ir.Bool_left_value v2))
+            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Lt, v1, v2))
         | Left_value v1, Left_value v2, Ge ->
-            Ir.Bool_value
-              (Ir.Bool_bool_binary
-                 (Ir.Ge, Ir.Bool_left_value v1, Ir.Bool_left_value v2))
+            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Ge, v1, v2))
         | Left_value v1, Left_value v2, Le ->
-            Ir.Bool_value
-              (Ir.Bool_bool_binary
-                 (Ir.Le, Ir.Bool_left_value v1, Ir.Bool_left_value v2))
+            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Le, v1, v2))
         | Left_value v1, Left_value v2, Neq ->
-            Ir.Bool_value
-              (Ir.Bool_bool_binary
-                 (Ir.Neq, Ir.Bool_left_value v1, Ir.Bool_left_value v2))
+            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Neq, v1, v2))
         | Left_value v1, Left_value v2, Eq ->
-            Ir.Bool_value
-              (Ir.Bool_bool_binary
-                 (Ir.Eq, Ir.Bool_left_value v1, Ir.Bool_left_value v2))
+            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Eq, v1, v2))
         | _, _, _ -> assert false
       in
       if extract_leftvalue then
         let tmp_var = generate_tmp_var ctx in
         let () =
           add_statement ctx
-            (Ir.Assignment (Ir.Identifier tmp_var, result_value))
+            (Ir.Assignment
+               ( Ir.Identifier
+                   (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+               , result_value ))
         in
-        Ir.Left_value (Ir.Identifier tmp_var)
+        Ir.Left_value
+          (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
       else result_value
 
 
@@ -156,7 +179,11 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
     | Assignment (symbol, value) ->
         let ir_value = compile_value ctx value in
         let () =
-          add_statement ctx (Ir.Assignment (Ir.Identifier symbol, ir_value))
+          add_statement ctx
+            (Ir.Assignment
+               ( Ir.Identifier
+                   (symbol, Ir.Unknown_type, is_local_var ctx symbol)
+               , ir_value ))
         in
         get_statements ctx
     | If (value, statements, Some else_statements) ->
@@ -172,7 +199,7 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
         let statements' = compile_statements ctx statements in
         cond_statements @ [Ir.If (condition, statements')]
     | For (symbol, value, statements) ->
-        let loop_value = compile_value ctx value in
+        let loop_value = compile_value ~extract_leftvalue:true ctx value in
         let loop_statements = get_statements ctx in
         let statements' = compile_statements ctx statements in
         loop_statements @ [Ir.For (symbol, loop_value, statements')]
@@ -180,10 +207,25 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
         let loop_value = compile_value ctx value in
         let loop_statements = get_statements ctx in
         let statements' = compile_statements ctx statements in
-        loop_statements @ [Ir.While (loop_value, statements')]
-    | Function (symbol, arg_l, statements) ->
+        (* here append loop_statements in WHILE body because
+           the WHOLE loop_value is separated into LOOP_VALUE and LOOP_STATEMENTS
+         *)
+        loop_statements @ [Ir.While (loop_value, statements' @ loop_statements)]
+    | Function (symbol, arg_l, statements, fun_tp) ->
+        add_local_vars ctx arg_l ;
         let statements' = compile_statements ctx statements in
-        [Ir.Fun_def (symbol, arg_l, statements')]
+        let fun_tp_arg =
+          List.sub fun_tp ~len:(List.length fun_tp - 1) ~pos:0
+          |> List.map ~f:string_to_tp
+        in
+        let fun_tp_result =
+          List.nth_exn fun_tp (List.length fun_tp - 1) |> string_to_tp
+        in
+        [ Ir.Fun_def
+            ( symbol
+            , arg_l
+            , statements'
+            , Ir.(`Normal (fun_tp_arg, fun_tp_result)) ) ]
     | Return value ->
         let value' = compile_value ctx value in
         let statements = get_statements ctx in

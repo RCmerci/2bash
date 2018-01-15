@@ -44,7 +44,7 @@ type statement =
   | If of (value * statements * statements option)
   | For of (symbol * value * statements)
   | While of (value * statements)
-  | Function of (symbol * symbol list * statements)
+  | Function of (symbol * symbol list * statements * string list)
   | Return of value
   | Value of value
   [@@deriving show]
@@ -85,5 +85,7 @@ type token =
   | IN
   | RETURN
   | COMMA
+  | ARROW
+  | COLON
   | EOF
   [@@deriving show]

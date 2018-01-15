@@ -1,92 +1,286 @@
 open Core
 open OUnit2
 open Sbash_lib
+open Util
 
+(*
+a=1+2*3-4;
+println(a);
+ *)
+
+let fixture_num_binary = Util.parse "a=1+2*3-4;\nprintln(a);"
+
+(*
+a="dede"++"tttt";
+b=a++"8888";
+println(b);
+ *)
+let fixture_str_binary =
+  Util.parse "a=\"dede\"++\"tttt\";\nb=a++\"8888\";\nprintln(b);"
+
+
+(*
+a=true;
+b=false;
+c=a==b;
+println(c);
+ *)
+
+let fixture_bool_binary = Util.parse "a=true;\nb=false;\nc=a==b;\nprintln(c);"
+
+(*
+a="aaa";
+c=a=="bb";
+println(c);
+ *)
+
+let fixture_bool_binary_2 = Util.parse "a=\"aaa\";\nc=a==\"bb\";\nprintln(c);"
+
+(*
+a=1;
+println(a);
+ *)
+let fixture_assign = Util.parse "a=1;\nprintln(a);"
+
+(*
+a=1;
+b=2;
+if (a<b) {
+   c=2;
+} else {
+   c=3;
+}
+println(c);
+ *)
+let fixture_if =
+  Util.parse
+    "a=1;\nb=2;\nif (a<b) {\n   c=2;\n} else {\n   c=3;\n}\nprintln(c);"
+
+
+(*
+a=0;
+for (i in [1,2,3]) {
+   a=a+i;
+}
+println(a);
+ *)
+
+let fixture_for =
+  Util.parse "a=0;\nfor (i in [1,2,3]) {\n   a=a+i;\n}\nprintln(a);"
+
+
+(*
+a=0;
+while (a < 5) {
+   a=a+1;
+}
+println(a);
+ *)
+let fixture_while =
+  Util.parse "a=0;\nwhile (a < 5) {\n   a=a+1;\n}\nprintln(a);"
+
+
+(*
+fun foo(a, b , c): string-> num -> bool -> string
+ {
+   printf("%s,%d,%d", a, b , c);
+}
+r=foo("a", 1, true);
+println(r);
+ *)
+let fixture_fun_def =
+  Util.parse
+    "fun foo(a, b , c): string-> num -> bool -> string\n {\n   printf(\"%s,%d,%d\", a, b , c);\n}\nr=foo(\"a\", 1, true);\nprintln(r);"
+
+
+(*
+fun foo() : string {
+    return "aaa";
+}
+println(foo());
+ *)
+
+let fixture_return =
+  Util.parse "fun foo() : string {\n    return \"aaa\";\n}\nprintln(foo());"
+
+
+(*
+fun foo() : string {
+   println("aaa");
+}
+foo();
+ *)
 let fixture_value =
-  Syntax.Op_value
-    (Syntax.Op
-       ( Syntax.Op_value
-           (Syntax.Op
-              ( Syntax.Basic_value (Syntax.Num 1)
-              , Syntax.Plus
-              , Syntax.Basic_value (Syntax.Num 2) ))
-       , Syntax.Gt
-       , Syntax.Op_value
-           (Syntax.Op
-              ( Syntax.Basic_value (Syntax.Num 3)
-              , Syntax.Plus
-              , Syntax.Fun_call
-                  ("call", [Syntax.Basic_value (Syntax.String "1")]) )) ))
+  Util.parse "fun foo() : string {\n   println(\"aaa\");\n}\nfoo();"
 
 
-let fixture_stat =
-  Syntax.Value
-    (Syntax.Op_value
-       (Syntax.Op
-          ( Syntax.Op_value
-              (Syntax.Op
-                 ( Syntax.Basic_value (Syntax.Num 1)
-                 , Syntax.Plus
-                 , Syntax.Basic_value (Syntax.Num 2) ))
-          , Syntax.Gt
-          , Syntax.Op_value
-              (Syntax.Op
-                 ( Syntax.Basic_value (Syntax.Num 3)
-                 , Syntax.Plus
-                 , Syntax.Fun_call
-                     ("call", [Syntax.Basic_value (Syntax.String "1")]) )) )))
+let gen_stats_num_binary _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_num_binary
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-num-binary" |> String.concat
+  in
+  assert_equal "3" result
 
 
-let fixture_stats =
-  [ Syntax.If
-      ( Syntax.Op_value
-          (Syntax.Op
-             ( Syntax.Op_value
-                 (Syntax.Op
-                    ( Syntax.Basic_value (Syntax.Num 1)
-                    , Syntax.Plus
-                    , Syntax.Basic_value (Syntax.Num 2) ))
-             , Syntax.Gt
-             , Syntax.Op_value
-                 (Syntax.Op
-                    ( Syntax.Basic_value (Syntax.Num 3)
-                    , Syntax.Plus
-                    , Syntax.Fun_call
-                        ("call", [Syntax.Basic_value (Syntax.String "1")]) )) ))
-      , [ Syntax.Value
-            (Syntax.Fun_call
-               ( "print"
-               , [ Syntax.Op_value
-                     (Syntax.Op
-                        ( Syntax.Basic_value (Syntax.Num 1)
-                        , Syntax.Plus
-                        , Syntax.Basic_value (Syntax.Num 2) )) ] ))
-        ; Syntax.Value (Syntax.Fun_call ("foo", [])) ]
-      , Some
-          [ Syntax.Value (Syntax.Fun_call ("ahhaha", []))
-          ; Syntax.Value (Syntax.Basic_value (Syntax.Symbol "a")) ] ) ]
+let gen_stats_str_binary _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_str_binary
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-str-binary" |> String.concat
+  in
+  assert_equal "dedetttt8888" result
 
 
-let compile_value_1 ctx =
-  let context = Compile.make_ctx in
-  Compile.compile_value context fixture_value |> ignore
+let gen_stats_bool_binary _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_bool_binary
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-bool-binary" |> String.concat
+  in
+  assert_equal "1" result
 
 
-let compile_statement_1 _ctx =
-  let ctx = Compile.make_ctx in
-  Compile.compile_statement ctx fixture_stat |> ignore
+let gen_stats_bool_binary_2 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_bool_binary_2
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-bool-binary-2" |> String.concat
+  in
+  assert_equal "1" result
 
 
-let compile_statements_1 _ctx =
-  let ctx = Compile.make_ctx in
-  Compile.compile_statements ctx fixture_stats |> ignore
+let gen_stats_assign _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_assign
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-assign" |> String.concat
+  in
+  assert_equal "1" result
+
+
+let gen_stats_if _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_if
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-if" |> String.concat
+  in
+  assert_equal "2" result
+
+
+let gen_stats_for _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_for
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-for" |> String.concat
+  in
+  assert_equal "6" result
+
+
+let gen_stats_while _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_while
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-while" |> String.concat
+  in
+  assert_equal "5" result
+
+
+let gen_stats_fun_def _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_fun_def
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-fun-def" |> String.concat
+  in
+  assert_equal "a,1,0" result
+
+
+let gen_stats_return _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_return
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-return" |> String.concat
+  in
+  assert_equal "aaa" result
+
+
+let gen_stats_value _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_value
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-value" |> String.concat
+  in
+  assert_equal "aaa" result
 
 
 let suite =
   "suite"
-  >::: [ "compile_value_1" >:: compile_value_1
-       ; "compile_statement_1" >:: compile_statement_1
-       ; "compile_statements_1" >:: compile_statements_1 ]
+  >::: [ "gen_stats_assign" >:: gen_stats_assign
+       ; "gen_stats_if" >:: gen_stats_if
+       ; "gen_stats_for" >:: gen_stats_for
+       ; "gen_stats_num_binary" >:: gen_stats_num_binary
+       ; "gen_stats_str_binary" >:: gen_stats_str_binary
+       ; "gen_stats_bool_binary" >:: gen_stats_bool_binary
+       ; "gen_stats_bool_binary_2" >:: gen_stats_bool_binary_2
+       ; "gen_stats_while" >:: gen_stats_while
+       ; "gen_stats_fun_def" >:: gen_stats_fun_def
+       ; "gen_stats_return" >:: gen_stats_return
+       ; "gen_stats_value" >:: gen_stats_value ]
 
 
 let () = run_test_tt_main suite

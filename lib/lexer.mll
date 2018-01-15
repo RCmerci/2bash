@@ -57,6 +57,8 @@ rule read =
      | "<"	{LT}
      | "=="	{EQ}
      | '=' 	{ASSIGN}
+     | "->"     {ARROW}
+     | ':' 	{COLON}
      | "fun"    {FUNCTION}
      | "if"    	{IF}
      | "else" 	{ELSE}
