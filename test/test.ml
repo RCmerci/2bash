@@ -11,6 +11,22 @@ println(a);
 let fixture_num_binary = Util.parse "a=1+2*3-4;\nprintln(a);"
 
 (*
+a="1"+2;
+ *)
+
+let fixture_num_binary_1 = Util.parse "a=\"1\"+2;"
+
+(*
+fun foo():string {
+   return "233";
+}
+a=1*foo();
+ *)
+let fixture_num_binary_2 =
+  Util.parse "fun foo():string {\n   return \"233\";\n}\na=1*foo();"
+
+
+(*
 a="dede"++"tttt";
 b=a++"8888";
 println(b);
@@ -18,6 +34,12 @@ println(b);
 let fixture_str_binary =
   Util.parse "a=\"dede\"++\"tttt\";\nb=a++\"8888\";\nprintln(b);"
 
+
+(*
+a=1++"de" ;
+ *)
+
+let fixture_str_binary_1 = Util.parse "a=1++\"de\" ;"
 
 (*
 a=true;
@@ -62,7 +84,7 @@ a=0;
 for (i in [1,2,3]) {
    a=a+i;
 }
-println(a);
+printf("%d", a);
  *)
 
 let fixture_for =
@@ -81,7 +103,7 @@ let fixture_while =
 
 
 (*
-fun foo(a, b , c): string-> num -> bool -> string
+fun fooo(a, b , c): string-> num -> bool -> string
  {
    printf("%s,%d,%d", a, b , c);
 }
@@ -128,6 +150,28 @@ let gen_stats_num_binary _ =
   assert_equal "3" result
 
 
+let gen_stats_num_binary_1 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats () =
+    Compile.compile_statements ctx fixture_num_binary_1
+    |> Type_check.check_statements ctx' |> ignore
+  in
+  try stats () with Type_check.Type_err s ->
+    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
+
+
+let gen_stats_num_binary_2 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats () =
+    Compile.compile_statements ctx fixture_num_binary_2
+    |> Type_check.check_statements ctx' |> ignore
+  in
+  try stats () with Type_check.Type_err s ->
+    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
+
+
 let gen_stats_str_binary _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_context () in
@@ -140,6 +184,17 @@ let gen_stats_str_binary _ =
     |> Util.run_shell ~tmp_file_name:"test-str-binary" |> String.concat
   in
   assert_equal "dedetttt8888" result
+
+
+let gen_stats_str_binary_1 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats () =
+    Compile.compile_statements ctx fixture_str_binary_1
+    |> Type_check.check_statements ctx' |> ignore
+  in
+  try stats () with Type_check.Type_err s ->
+    Util.assert_string_contains s "expect type Ir.Str_type, got Ir.Num_type"
 
 
 let gen_stats_bool_binary _ =
@@ -274,13 +329,17 @@ let suite =
        ; "gen_stats_if" >:: gen_stats_if
        ; "gen_stats_for" >:: gen_stats_for
        ; "gen_stats_num_binary" >:: gen_stats_num_binary
+       ; "gen_stats_num_binary_1" >:: gen_stats_num_binary_1
+       ; "gen_stats_num_binary_2" >:: gen_stats_num_binary_2
        ; "gen_stats_str_binary" >:: gen_stats_str_binary
+       ; "gen_stats_str_binary_1" >:: gen_stats_str_binary_1
        ; "gen_stats_bool_binary" >:: gen_stats_bool_binary
        ; "gen_stats_bool_binary_2" >:: gen_stats_bool_binary_2
        ; "gen_stats_while" >:: gen_stats_while
        ; "gen_stats_fun_def" >:: gen_stats_fun_def
        ; "gen_stats_return" >:: gen_stats_return
        ; "gen_stats_value" >:: gen_stats_value ]
+       @ Builtin_test.suite
 
 
 let () = run_test_tt_main suite

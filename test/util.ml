@@ -35,3 +35,7 @@ let run_shell ?(tmp_file_name= "tmp") ?(rm_tmp_file= false) s =
   In_channel.close cmd ;
   if rm_tmp_file then Sys.remove tmpf ;
   r
+
+
+let assert_string_contains s sub =
+  Option.is_some (String.substr_index s sub) |> OUnit2.assert_bool s

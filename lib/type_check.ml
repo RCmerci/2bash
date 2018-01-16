@@ -81,16 +81,20 @@ let get_leftvalue_tp_exn ctx v =
 
 let get_fun_tp = find_fun_tp
 
-let expect_tp ~name t expect =
+let expect_tp' ~name t expect =
   match (expect, t) with
-  | List_type _, List_type Unknown_type -> ()
-  | List_type Unknown_type, List_type _ -> ()
-  | _ ->
-      if not (t = expect) then
-        raise
-          (Type_err
-             (Printf.sprintf "[%s] expect type %s, got %s" name
-                (show_tp expect) (show_tp t)))
+  | List_type _, List_type Unknown_type -> true
+  | List_type Unknown_type, List_type _ -> true
+  | _ -> t = expect
+
+
+let expect_tp ~name t expect_l =
+  if not (List.exists expect_l ~f:(fun e -> expect_tp' ~name t e)) then
+    raise
+      (Type_err
+         (Printf.sprintf "[%s] expect type %s, got %s" name
+            (String.concat ~sep:" or " (List.map expect_l show_tp))
+            (show_tp t)))
 
 
 let rec leftvalue_name v =
@@ -129,7 +133,7 @@ let rec get_value_tp ctx v =
       | _ ->
           let tp = List.nth_exn vl 0 |> get_value_tp ctx in
           List.map vl ~f:(fun e ->
-              expect_tp ~name:"list" (get_value_tp ctx e) tp )
+              expect_tp ~name:"list" (get_value_tp ctx e) [tp] )
           |> ignore ;
           tp )
   | Fun_call (name, vl) ->
@@ -152,10 +156,11 @@ let rec get_value_tp ctx v =
                    (Printf.sprintf "func[%s] expect arg length > given args"
                       name))
             else
-              List.mapi vl ~f:(fun ind e ->
+              List.mapi argl ~f:(fun ind e ->
                   let desc = Printf.sprintf "func[%s] arg" name in
-                  expect_tp ~name:desc (get_value_tp ctx e)
-                    (List.nth_exn argl ind) )
+                  expect_tp ~name:desc
+                    (get_value_tp ctx (List.nth_exn vl ind))
+                    e )
               |> ignore ;
             r
 
@@ -165,10 +170,10 @@ let rec check_num_binary ctx v =
   | Num_leftvalue_binary (op, v1, v2) ->
       expect_tp ~name:(leftvalue_name v1)
         (get_leftvalue_tp_exn ctx v1)
-        Num_type ;
+        [Num_type] ;
       expect_tp ~name:(leftvalue_name v2)
         (get_leftvalue_tp_exn ctx v2)
-        Num_type ;
+        [Num_type] ;
       let v1' = inject_leftvalue_tp v1 Num_type in
       let v2' = inject_leftvalue_tp v2 Num_type in
       Num_leftvalue_binary (op, v1', v2')
@@ -184,10 +189,10 @@ and check_str_binary ctx v =
   | Str_leftvalue_binary (op, v1, v2) ->
       expect_tp ~name:(leftvalue_name v1)
         (get_leftvalue_tp_exn ctx v1)
-        Str_type ;
+        [Str_type] ;
       expect_tp ~name:(leftvalue_name v2)
         (get_leftvalue_tp_exn ctx v2)
-        Str_type ;
+        [Str_type] ;
       let v1' = inject_leftvalue_tp v1 Str_type in
       let v2' = inject_leftvalue_tp v2 Str_type in
       Str_leftvalue_binary (op, v1', v2')
@@ -203,7 +208,7 @@ and check_bool_binary ctx v =
   | Bool_leftvalue_binary (op, v1, v2) ->
       expect_tp ~name:(leftvalue_name v1)
         (get_leftvalue_tp_exn ctx v1)
-        (get_leftvalue_tp_exn ctx v2) ;
+        [get_leftvalue_tp_exn ctx v2] ;
       let v1' = inject_leftvalue_tp v1 (get_leftvalue_tp_exn ctx v1) in
       let v2' = inject_leftvalue_tp v2 (get_leftvalue_tp_exn ctx v2) in
       Bool_leftvalue_binary (op, v1', v2')
@@ -227,13 +232,13 @@ and check_list_binary ctx v =
   | List_leftvalue_binary (op, v1, v2) ->
       expect_tp ~name:(leftvalue_name v1)
         (get_leftvalue_tp_exn ctx v1)
-        (List_type Unknown_type) ;
+        [List_type Unknown_type] ;
       expect_tp ~name:(leftvalue_name v2)
         (get_leftvalue_tp_exn ctx v2)
-        (List_type Unknown_type) ;
+        [List_type Unknown_type] ;
       expect_tp ~name:(leftvalue_name v1)
         (get_leftvalue_tp_exn ctx v1)
-        (Option.value_exn (get_leftvalue_tp ctx v2)) ;
+        [Option.value_exn (get_leftvalue_tp ctx v2)] ;
       let v1' =
         inject_leftvalue_tp v1 (Option.value_exn (get_leftvalue_tp ctx v1))
       in
@@ -335,14 +340,12 @@ and check_statement ctx s =
   | While (v, stats) ->
       let v' = check_value ctx v in
       let v_tp = get_value_tp ctx v' in
-      expect_tp ~name:"while condition" v_tp Bool_type ;
+      expect_tp ~name:"while condition" v_tp [Bool_type] ;
       let stats' = check_statements ctx stats in
       While (v', stats')
   | Return v ->
       let v' = check_value ctx v in
-      let v_tp = get_value_tp ctx v' in
-      if v_tp <> Str_type then
-        raise (Type_err "user-defined function return type must be string") ;
+      (* let v_tp = get_value_tp ctx v' in *)
       Return v'
   | Value v ->
       let v' = check_value ctx v in
@@ -360,7 +363,8 @@ and check_statement ctx s =
                 fun_name)) ;
       let stats' =
         with_scope ctx (fun () ->
-            List.map2 argl arg_tp ~f:(fun a b -> add_leftvalue_tp ctx a b)
+            List.map2 argl arg_tp ~f:(fun a b ->
+                add_leftvalue_tp ctx a (List.hd_exn b) )
             |> ignore ;
             check_statements ctx stats )
       in

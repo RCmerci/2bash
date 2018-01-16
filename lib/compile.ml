@@ -87,18 +87,16 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
       let value_l' =
         List.map value_l ~f:(compile_value ~extract_leftvalue:false ctx)
       in
-      if extract_leftvalue then
-        let tmp_var = generate_tmp_var ctx in
-        let () =
-          add_statement ctx
-            (Ir.Assignment
-               ( Ir.Identifier
-                   (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
-               , Ir.Fun_call (symbol, value_l') ))
-        in
-        Ir.Left_value
-          (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
-      else Ir.Fun_call (symbol, value_l')
+      let tmp_var = generate_tmp_var ctx in
+      let () =
+        add_statement ctx
+          (Ir.Assignment
+             ( Ir.Identifier
+                 (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+             , Ir.Fun_call (symbol, value_l') ))
+      in
+      Ir.Left_value
+        (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
   | Basic_value v ->
       let is_symbol v = match v with Symbol _ -> true | _ -> false in
       let value' =
@@ -216,7 +214,7 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
         let statements' = compile_statements ctx statements in
         let fun_tp_arg =
           List.sub fun_tp ~len:(List.length fun_tp - 1) ~pos:0
-          |> List.map ~f:string_to_tp
+          |> List.map ~f:(fun t -> [string_to_tp t])
         in
         let fun_tp_result =
           List.nth_exn fun_tp (List.length fun_tp - 1) |> string_to_tp

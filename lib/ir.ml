@@ -10,7 +10,7 @@ type tp =
    e.g. printf
  *)
 type fun_tp =
-  [`Normal of tp list * tp | `Indefinite of tp list * tp]
+  [`Normal of tp list list * tp | `Indefinite of tp list list * tp]
   [@@deriving show]
 
 type num_binary =

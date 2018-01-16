@@ -6,34 +6,39 @@ exception Generate_error of string
 exception Generate_type_error of string
 
 type generated =
-  [`Quote of string | `Var of string | `Raw of string | `Fun_call of string]
+  [ `Quote of string
+  | `Var of string
+  | `Raw of string
+  | `Fun_call of string -> string ]
   [@@deriving show]
 
-let eval v =
+let eval ?(fun_call_result_var= "") v =
   match v with
   | `Quote v' -> v'
   | `Var v' -> "${" ^ v' ^ "}"
-  | `Fun_call v' -> "$(" ^ v' ^ ")"
+  | `Fun_call v' -> v' fun_call_result_var
   | `Raw v' -> "$(" ^ v' ^ ")"
 
 
 let eval_leftvalue (v, tp, is_local) =
-  let v' =
-    match v with
-    | `Quote v' -> v'
-    | `Var v' -> "${" ^ v' ^ "}"
-    | `Fun_call v' -> "$(" ^ v' ^ ")"
-    | `Raw v' -> "$(" ^ v' ^ ")"
-  in
+  let v' = match v with `Var v' -> "${" ^ v' ^ "}" | _ -> assert false in
   (v', tp, is_local)
 
 
 let extract v =
-  match v with `Quote v -> v | `Var v -> v | `Fun_call v -> v | `Raw v -> v
+  match v with
+  | `Quote v -> v
+  | `Var v -> v
+  | `Fun_call v -> v "???"
+  | `Raw v -> v
 
 
 let extract_leftvalue (v, tp, is_local) =
-  match v with `Quote v -> v | `Var v -> v | `Fun_call v -> v | `Raw v -> v
+  match v with
+  | `Quote v -> v
+  | `Var v -> v
+  | `Fun_call v -> v "???"
+  | `Raw v -> v
 
 
 let gen_num_bool_binary_op = function
@@ -185,64 +190,79 @@ and gen_value (v: value) =
       in
       let builtin = Builtin.gen name vl' in
       if Option.is_none builtin then
-        `Fun_call (String.concat ~sep:" " (name :: vl'))
+        `Fun_call
+          (fun result_var ->
+            String.concat ~sep:" " (name :: vl') ^ " " ^ result_var)
       else `Fun_call (Option.value_exn builtin)
 
 
 let with_indent indent_level v = String.make (indent_level * 4) ' ' ^ v ^ "\n"
+
+let with_indent_lines indent_level v =
+  List.map (String.split_lines v) ~f:(fun e -> with_indent indent_level e)
+  |> String.concat
+
 
 let rec gen_statement (v: statement) ~(indent: int) =
   let eval_loop_value v =
     match v with `Var v' -> "${" ^ v' ^ "[@]}" | _ as v' -> eval v'
   in
   match v with
-  | Assignment (lv, v) ->
+  | Assignment (lv, v) -> (
       let lv' = extract_leftvalue @@ gen_leftvalue lv in
-      let v' = eval @@ gen_value v in
-      lv' ^ "=" ^ v' |> with_indent indent
+      let v' = gen_value v in
+      match v' with
+      | `Fun_call _ ->
+          let v'' = eval ~fun_call_result_var:lv' v' in
+          v'' |> with_indent_lines indent
+      | _ -> lv' ^ "=" ^ eval v' |> with_indent_lines indent )
   | If (v, stats) ->
       let v' = eval @@ gen_value v in
-      let cond = Printf.sprintf "if [ %s ]; then" v' |> with_indent indent in
+      let cond =
+        Printf.sprintf "if [ %s ]; then" v' |> with_indent_lines indent
+      in
       let stats' = gen_statements stats (indent + 1) in
-      cond ^ String.concat stats' ^ with_indent indent "fi"
+      cond ^ String.concat stats' ^ with_indent_lines indent "fi"
   | If_else (v, stats1, stats2) ->
       let v' = eval @@ gen_value v in
-      let cond = Printf.sprintf "if [ %s ]; then" v' |> with_indent indent in
+      let cond =
+        Printf.sprintf "if [ %s ]; then" v' |> with_indent_lines indent
+      in
       let stats1' = gen_statements stats1 (indent + 1) in
       let stats2' = gen_statements stats2 (indent + 1) in
-      cond ^ String.concat stats1' ^ with_indent indent "else"
-      ^ String.concat stats2' ^ with_indent indent "fi"
+      cond ^ String.concat stats1' ^ with_indent_lines indent "else"
+      ^ String.concat stats2' ^ with_indent_lines indent "fi"
   | For (e, v, stats) ->
       let v' = eval_loop_value @@ gen_value v in
       let stats' = gen_statements stats (indent + 1) in
       let loop =
-        Printf.sprintf "for %s in %s; do" e v' |> with_indent indent
+        Printf.sprintf "for %s in %s; do" e v' |> with_indent_lines indent
       in
-      loop ^ String.concat stats' ^ with_indent indent "done"
+      loop ^ String.concat stats' ^ with_indent_lines indent "done"
   | While (v, stats) ->
       let v' = eval @@ gen_value v in
       let stats' = gen_statements stats (indent + 1) in
       let while' =
-        Printf.sprintf "while [ 0 -eq %s ]; do" v' |> with_indent indent
+        Printf.sprintf "while [ 0 -eq %s ]; do" v' |> with_indent_lines indent
       in
-      while' ^ String.concat stats' ^ with_indent indent "done"
+      while' ^ String.concat stats' ^ with_indent_lines indent "done"
   | Fun_def (name, args, stats, fun_tp) ->
-      let def = Printf.sprintf "%s() {" name |> with_indent indent in
+      let def = Printf.sprintf "%s() {" name |> with_indent_lines indent in
       let args' =
-        List.mapi args ~f:(fun i e ->
-            Printf.sprintf "local %s=$%d" e (i + 1) |> with_indent (indent + 1)
-        )
+        List.mapi (args @ ["__fun_result_var"]) ~f:(fun i e ->
+            Printf.sprintf "local %s=$%d" e (i + 1)
+            |> with_indent_lines (indent + 1) )
       in
       let stats' = gen_statements stats (indent + 1) in
-      def ^ String.concat (args' @ stats') ^ with_indent indent "}"
+      def ^ String.concat (args' @ stats') ^ with_indent_lines indent "}"
   | Return v ->
       let v' = eval @@ gen_value v in
-      "echo -ne " ^ v' |> with_indent indent
+      "eval $__fun_result_var=" ^ v' |> with_indent_lines indent
   | Value v ->
       let v' = gen_value v in
       match v' with
-      | `Fun_call s -> s |> with_indent indent
-      | _ -> "## " ^ extract v' |> with_indent indent
+      | `Fun_call s -> s "__unused__fun_result_var" |> with_indent_lines indent
+      | _ -> "## " ^ extract v' |> with_indent_lines indent
 
 
 and gen_statements (v: statements) ~(indent: int) : string list =

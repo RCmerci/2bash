@@ -3,13 +3,37 @@ open Ir
 
 exception Built_in_fun_arg_err of string
 
-let printf arg_l = String.concat ~sep:" " ("printf" :: arg_l)
+let printf arg_l result_var =
+  let l1 = String.concat ~sep:" " ("printf" :: arg_l) in
+  let l2 = result_var ^ "=$?" in
+  [l1; l2] |> String.concat ~sep:"\n"
 
-let println arg_l = String.concat ~sep:" " ("echo -e" :: arg_l)
+
+let println arg_l result_var =
+  let l1 = String.concat ~sep:" " ("echo -e" :: arg_l) in
+  let l2 = result_var ^ "=$?" in
+  [l1; l2] |> String.concat ~sep:"\n"
+
+
+let sprintf arg_l result_var =
+  let p = String.concat ~sep:" " ("printf" :: arg_l) in
+  result_var ^ "=$(" ^ p ^ ")"
+
+
+let call arg_l result_var =
+  let arg =
+    List.hd_exn arg_l
+    |> String.strip ~drop:(fun e ->
+           match e with '"' | ' ' | '\t' -> true | _ -> false )
+  in
+  result_var ^ "=$(" ^ arg ^ ")"
+
 
 let builtin_fun_l =
-  [ ("printf", printf, `Indefinite ([Str_type], Str_type))
-  ; ("println", println, `Normal ([Str_type], Str_type)) ]
+  [ ("printf", printf, `Indefinite ([[Str_type]], Num_type))
+  ; ("println", println, `Normal ([[Str_type; Num_type; Bool_type]], Num_type))
+  ; ("sprintf", sprintf, `Indefinite ([[Str_type]], Str_type))
+  ; ("call", call, `Normal ([[Str_type]], Str_type)) ]
 
 
 let gen name args =
