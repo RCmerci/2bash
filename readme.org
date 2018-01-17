@@ -53,9 +53,9 @@ while (a < 5) {
 
 #+BEGIN_SRC  c
 // define function 
-fun fooo(a, b , c): string-> num -> bool -> string
- {
-   printf("%s,%d,%d", a, b , c);
+fun foo(a, b , c): string-> num -> bool -> string
+{
+    return sprintf("%s,%d,%d", a, b , c);
 }
 
 #+END_SRC

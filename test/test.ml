@@ -118,16 +118,28 @@ let fixture_while =
 
 
 (*
-fun fooo(a, b , c): string-> num -> bool -> string
+fun foo(a, b , c): string-> num -> bool -> string
  {
-   printf("%s,%d,%d", a, b , c);
+   return sprintf("%s,%d,%d", a, b , c);
+
 }
 r=foo("a", 1, true);
 println(r);
  *)
 let fixture_fun_def =
   Util.parse
-    "fun foo(a, b , c): string-> num -> bool -> string\n {\n   printf(\"%s,%d,%d\", a, b , c);\n}\nr=foo(\"a\", 1, true);\nprintln(r);"
+    "fun foo(a, b , c): string-> num -> bool -> string\n {\n   return sprintf(\"%s,%d,%d\", a, b , c);\n}\nr=foo(\"a\", 1, true);\nprintln(r);"
+
+
+(*
+fun foo(a,b): string -> num -> num {
+   printf("%s, %d", a, b);
+   return "";
+}
+ *)
+let fixture_fun_def_1 =
+  Util.parse
+    "fun foo(a,b): string -> num -> num {\n   printf(\"%s, %d\", a, b);\n   return \"\";\n}"
 
 
 (*
@@ -349,6 +361,17 @@ let gen_stats_fun_def _ =
   assert_equal "a,1,0" result
 
 
+let gen_stats_fun_def_1 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats () =
+    Compile.compile_statements ctx fixture_fun_def_1
+    |> Type_check.check_statements ctx' |> ignore
+  in
+  try stats () with Type_check.Type_err s ->
+    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
+
+
 let gen_stats_return _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_context () in
@@ -407,6 +430,7 @@ let suite =
        ; "gen_stats_bool_binary_2" >:: gen_stats_bool_binary_2
        ; "gen_stats_while" >:: gen_stats_while
        ; "gen_stats_fun_def" >:: gen_stats_fun_def
+       ; "gen_stats_fun_def_1" >:: gen_stats_fun_def_1
        ; "gen_stats_return" >:: gen_stats_return
        ; "gen_stats_value" >:: gen_stats_value
        ; "gen_comment" >:: gen_comment ]

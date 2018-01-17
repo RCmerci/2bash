@@ -171,6 +171,15 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
       else result_value
 
 
+let zero_value tp =
+  match tp with
+  | Ir.Num_type -> Ir.Num_value (Ir.Num 0)
+  | Ir.Str_type -> Ir.Str_value (Ir.Str "")
+  | Ir.List_type _ -> Ir.List []
+  | Ir.Bool_type -> Ir.Bool_value (Ir.Bool false)
+  | Ir.Unknown_type -> assert false
+
+
 let rec compile_statement ctx (statement: statement) : Ir.statements =
   let f () =
     match statement with
@@ -219,10 +228,20 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
         let fun_tp_result =
           List.nth_exn fun_tp (List.length fun_tp - 1) |> string_to_tp
         in
+        let append_return_statement =
+          []
+          (* let open Option in *)
+          (* List.last statements' *)
+          (* >>= (fun s -> *)
+          (*       match s with *)
+          (*       | Ir.Return _ -> None *)
+          (*       | _ -> return @@ Ir.Return (zero_value fun_tp_result)) *)
+          (* |> to_list *)
+        in
         [ Ir.Fun_def
             ( symbol
             , arg_l
-            , statements'
+            , statements' @ append_return_statement
             , Ir.(`Normal (fun_tp_arg, fun_tp_result)) ) ]
     | Return value ->
         let value' = compile_value ctx value in

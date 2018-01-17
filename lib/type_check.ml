@@ -2,14 +2,17 @@ open Core
 open Ir
 module S = Scope.StrMapScope
 
-type context = {mutable scope: tp S.t; mutable fun_scope: fun_tp S.t}
+type context =
+  { mutable scope: tp S.t
+  ; mutable fun_scope: fun_tp S.t
+  ; mutable return_type_scope: tp Scope.ListScope.t }
 
 exception Type_err of string
 
 let make_context () =
   let fun_scope = S.make () in
   Builtin.inject_builtin_tp fun_scope ;
-  {scope= S.make (); fun_scope}
+  {scope= S.make (); fun_scope; return_type_scope= Scope.ListScope.make ()}
 
 
 let raise_type_err t expect =
@@ -46,9 +49,26 @@ let with_scope ctx (f: unit -> 'a) : 'a =
   r
 
 
+let with_return_type_scope ctx (f: unit -> 'a) : 'a =
+  let new_scope ctx =
+    let origin = ctx.return_type_scope in
+    let () =
+      ctx.return_type_scope <- Scope.ListScope.new_level ctx.return_type_scope
+    in
+    origin
+  in
+  let recover_scope ctx scope = ctx.return_type_scope <- scope in
+  let origin = new_scope ctx in
+  let r = f () in
+  let () = recover_scope ctx origin in
+  r
+
+
 let add_fun_tp ctx name tp = S.add ctx.fun_scope name tp
 
 let add_leftvalue_tp ctx name tp = S.add ctx.scope name tp
+
+let add_return_tp ctx tp = Scope.ListScope.add ctx.return_type_scope () tp
 
 let rec get_leftvalue_tp_local ctx v =
   match v with
@@ -80,6 +100,14 @@ let get_leftvalue_tp_exn ctx v =
 
 
 let get_fun_tp = find_fun_tp
+
+let get_return_tp_exn ctx =
+  let r = Scope.ListScope.level_values ctx.return_type_scope in
+  if Option.is_none (List.hd r) then
+    raise
+      (Type_err "can not get return type, use RETURN statement in toplevel? ")
+  else List.hd_exn r
+
 
 let expect_tp' ~name t expect =
   match (expect, t) with
@@ -345,7 +373,9 @@ and check_statement ctx s =
       While (v', stats')
   | Return v ->
       let v' = check_value ctx v in
-      (* let v_tp = get_value_tp ctx v' in *)
+      let v_tp = get_value_tp ctx v in
+      let return_tp = get_return_tp_exn ctx in
+      expect_tp ~name:"return statement" v_tp [return_tp] ;
       Return v'
   | Value v ->
       let v' = check_value ctx v in
@@ -355,6 +385,11 @@ and check_statement ctx s =
       let arg_tp =
         match fun_tp with `Normal (arg_tp, _) -> arg_tp | _ -> assert false
       in
+      let return_tp =
+        match fun_tp with
+        | `Normal (_, return_tp) -> return_tp
+        | _ -> assert false
+      in
       if List.length arg_tp <> List.length argl then
         raise
           (Type_err
@@ -363,10 +398,12 @@ and check_statement ctx s =
                 fun_name)) ;
       let stats' =
         with_scope ctx (fun () ->
-            List.map2 argl arg_tp ~f:(fun a b ->
-                add_leftvalue_tp ctx a (List.hd_exn b) )
-            |> ignore ;
-            check_statements ctx stats )
+            with_return_type_scope ctx (fun () ->
+                add_return_tp ctx return_tp ;
+                List.map2 argl arg_tp ~f:(fun a b ->
+                    add_leftvalue_tp ctx a (List.hd_exn b) )
+                |> ignore ;
+                check_statements ctx stats ) )
       in
       Fun_def (fun_name, argl, stats', fun_tp)
 
