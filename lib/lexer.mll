@@ -49,6 +49,7 @@ rule read =
      | '/'	{DIV}
      | ';'	{SEMICOLON}
      | '"'      {read_string (Buffer.create 15) lexbuf}
+     | "//"	{read_comment lexbuf}
      | ">="	{GE}
      | "<="	{LE}
      | "<>"	{NEQ}
@@ -79,3 +80,10 @@ and read_string buf =
     | [^ '"' '\\']+	{Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf} 
     | _			{raise (SyntaxError ("illegal string:" ^ Lexing.lexeme lexbuf))}
     | eof		{raise (SyntaxError "string is not terminated")}
+
+
+and read_comment =
+    parse
+    | '\n'	{read lexbuf}
+    | eof	{lexbuf.lex_eof_reached<-true;EOF}
+    | _ 	{read_comment lexbuf}

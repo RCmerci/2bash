@@ -219,7 +219,7 @@ let rec gen_statement (v: statement) ~(indent: int) =
   | If (v, stats) ->
       let v' = eval @@ gen_value v in
       let cond =
-        Printf.sprintf "if [ %s ]; then" v' |> with_indent_lines indent
+        Printf.sprintf "if [ 0 -eq %s ]; then" v' |> with_indent_lines indent
       in
       let stats' = gen_statements stats (indent + 1) in
       cond ^ String.concat stats' ^ with_indent_lines indent "fi"

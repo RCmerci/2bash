@@ -1,0 +1,62 @@
+* 2Bash
+  A simple language compiles to bash.
+
+
+** Syntax
+#+BEGIN_SRC c
+// basic type
+a=1;		// num 
+b="111";	// string 
+c=[1,2,3];	// num list
+d=true;		// bool
+#+END_SRC
+
+#+BEGIN_SRC c 
+// basic operation
+a=1+2*3-4/5;
+b="deee"++"233";
+c=[1,2,3]@@[4,5,6];
+d=1==2;
+e=2>3;
+#+END_SRC
+
+   #+BEGIN_SRC c
+// if
+a=1;
+b=2;
+if (a<b) {
+c=2;
+} else {
+c=3;
+}
+
+   #+END_SRC
+
+#+BEGIN_SRC  c
+// for
+a=0;
+for (i in [1,2,3]) {
+   a=a+i;
+}
+
+
+#+END_SRC
+
+
+#+BEGIN_SRC  c
+// while
+a=0;
+while (a < 5) {
+   a=a+1;
+}
+#+END_SRC
+
+#+BEGIN_SRC  c
+// define function 
+fun fooo(a, b , c): string-> num -> bool -> string
+ {
+   printf("%s,%d,%d", a, b , c);
+}
+
+#+END_SRC
+

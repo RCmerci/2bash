@@ -51,6 +51,13 @@ println(c);
 let fixture_bool_binary = Util.parse "a=true;\nb=false;\nc=a==b;\nprintln(c);"
 
 (*
+a=1>2;
+println(a);
+ *)
+
+let fixture_bool_binary_1 = Util.parse "a=1>2;\nprintln(a);"
+
+(*
 a="aaa";
 c=a=="bb";
 println(c);
@@ -78,6 +85,14 @@ let fixture_if =
   Util.parse
     "a=1;\nb=2;\nif (a<b) {\n   c=2;\n} else {\n   c=3;\n}\nprintln(c);"
 
+
+(*
+if (1==0) {
+   a=1;
+}
+println(a);
+ *)
+let fixture_if_1 = Util.parse "if (1==0) {\n   a=1;\n}\nprintln(a);"
 
 (*
 a=0;
@@ -134,6 +149,17 @@ foo();
  *)
 let fixture_value =
   Util.parse "fun foo() : string {\n   println(\"aaa\");\n}\nfoo();"
+
+
+(*
+// this is comment
+a=1; // another comment
+println(a);
+//
+ *)
+
+let fixture_comment =
+  Util.parse "// this is comment\na=1; // another comment\nprintln(a);\n// "
 
 
 let gen_stats_num_binary _ =
@@ -211,6 +237,20 @@ let gen_stats_bool_binary _ =
   assert_equal "1" result
 
 
+let gen_stats_bool_binary_1 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_bool_binary_1
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-bool-binary-1" |> String.concat
+  in
+  assert_equal "1" result
+
+
 let gen_stats_bool_binary_2 _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_context () in
@@ -251,6 +291,20 @@ let gen_stats_if _ =
     |> Util.run_shell ~tmp_file_name:"test-if" |> String.concat
   in
   assert_equal "2" result
+
+
+let gen_stats_if_1 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_if_1
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-if-1" |> String.concat
+  in
+  assert_equal "" result
 
 
 let gen_stats_for _ =
@@ -323,10 +377,25 @@ let gen_stats_value _ =
   assert_equal "aaa" result
 
 
+let gen_comment _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_comment
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-comment" |> String.concat
+  in
+  assert_equal "1" result
+
+
 let suite =
   "suite"
   >::: [ "gen_stats_assign" >:: gen_stats_assign
        ; "gen_stats_if" >:: gen_stats_if
+       ; "gen_stats_if_1" >:: gen_stats_if_1
        ; "gen_stats_for" >:: gen_stats_for
        ; "gen_stats_num_binary" >:: gen_stats_num_binary
        ; "gen_stats_num_binary_1" >:: gen_stats_num_binary_1
@@ -334,11 +403,13 @@ let suite =
        ; "gen_stats_str_binary" >:: gen_stats_str_binary
        ; "gen_stats_str_binary_1" >:: gen_stats_str_binary_1
        ; "gen_stats_bool_binary" >:: gen_stats_bool_binary
+       ; "gen_stats_bool_binary_1" >:: gen_stats_bool_binary_1
        ; "gen_stats_bool_binary_2" >:: gen_stats_bool_binary_2
        ; "gen_stats_while" >:: gen_stats_while
        ; "gen_stats_fun_def" >:: gen_stats_fun_def
        ; "gen_stats_return" >:: gen_stats_return
-       ; "gen_stats_value" >:: gen_stats_value ]
+       ; "gen_stats_value" >:: gen_stats_value
+       ; "gen_comment" >:: gen_comment ]
        @ Builtin_test.suite
 
 
