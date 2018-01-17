@@ -141,7 +141,7 @@ let rec inject_leftvalue_tp v tp =
 let rec get_list_binary_tp ctx v =
   match v with
   | List_binary (_, v1, _) -> get_list_binary_tp ctx v1
-  | List_leftvalue_binary (_, v1, _) -> get_leftvalue_tp_exn ctx v1
+  | List_leftvalue_binary (_, v1, _) -> List_type (get_leftvalue_tp_exn ctx v1)
 
 
 let rec get_value_tp ctx v =
@@ -157,13 +157,13 @@ let rec get_value_tp ctx v =
       | 0 -> List_type Unknown_type
       | 1 ->
           let tp = List.nth_exn vl 0 |> get_value_tp ctx in
-          tp
+          List_type tp
       | _ ->
           let tp = List.nth_exn vl 0 |> get_value_tp ctx in
           List.map vl ~f:(fun e ->
               expect_tp ~name:"list" (get_value_tp ctx e) [tp] )
           |> ignore ;
-          tp )
+          List_type tp )
   | Fun_call (name, vl) ->
       let fun_tp = get_fun_tp ctx name in
       if Option.is_none fun_tp then
@@ -283,8 +283,13 @@ and check_list_binary ctx v =
 and check_value ctx v =
   match v with
   | Left_value v ->
-      Left_value
-        (inject_leftvalue_tp v (Option.value_exn (get_leftvalue_tp ctx v)))
+      let v_tp = get_leftvalue_tp ctx v in
+      if Option.is_none v_tp then
+        raise
+          (Type_err
+             (Printf.sprintf "variable[%s] not defined yet"
+                (extract_leftvalue v)))
+      else Left_value (inject_leftvalue_tp v (Option.value_exn v_tp))
   | Num_value v -> Num_value (check_num_binary ctx v)
   | Str_value v -> Str_value (check_str_binary ctx v)
   | Bool_value v -> Bool_value (check_bool_binary ctx v)
@@ -354,6 +359,10 @@ and check_statement ctx s =
   | For (i, v, stats) ->
       let v' = check_value ctx v in
       let v_tp = get_value_tp ctx v' in
+      expect_tp ~name:"for-loop value" v_tp [List_type Unknown_type] ;
+      let inner_v_tp =
+        match v_tp with List_type inner -> inner | _ -> assert false
+      in
       let tp = get_leftvalue_tp ctx (Identifier (i, Unknown_type, false)) in
       if Option.is_some tp then
         if Option.value_exn tp <> v_tp then
@@ -362,7 +371,7 @@ and check_statement ctx s =
                (Printf.sprintf "var[%s] has type %s, can not be %s" i
                   (show_tp (Option.value_exn tp))
                   (show_tp v_tp))) ;
-      add_leftvalue_tp ctx i v_tp ;
+      add_leftvalue_tp ctx i inner_v_tp ;
       let stats' = check_statements ctx stats in
       For (i, v', stats')
   | While (v, stats) ->

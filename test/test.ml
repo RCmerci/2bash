@@ -72,6 +72,11 @@ println(a);
 let fixture_assign = Util.parse "a=1;\nprintln(a);"
 
 (*
+b=a;
+ *)
+let fixture_not_defined = Util.parse "b=a;"
+
+(*
 a=1;
 b=2;
 if (a<b) {
@@ -105,6 +110,14 @@ printf("%d", a);
 let fixture_for =
   Util.parse "a=0;\nfor (i in [1,2,3]) {\n   a=a+i;\n}\nprintln(a);"
 
+
+(*
+a="";
+for (i in "1 2 3") {
+   a=a++i;
+}
+ *)
+let fixture_for_1 = Util.parse "a=\"\";\nfor (i in \"1 2 3\") {\n   a=a++i;\n}"
 
 (*
 a=0;
@@ -291,6 +304,17 @@ let gen_stats_assign _ =
   assert_equal "1" result
 
 
+let gen_stats_not_defined _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats () =
+    Compile.compile_statements ctx fixture_not_defined
+    |> Type_check.check_statements ctx' |> ignore
+  in
+  try stats () with Type_check.Type_err s ->
+    Util.assert_string_contains s "not defined yet"
+
+
 let gen_stats_if _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_context () in
@@ -331,6 +355,18 @@ let gen_stats_for _ =
     |> Util.run_shell ~tmp_file_name:"test-for" |> String.concat
   in
   assert_equal "6" result
+
+
+let gen_stats_for_1 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats () =
+    Compile.compile_statements ctx fixture_for_1
+    |> Type_check.check_statements ctx' |> ignore
+  in
+  try stats () with Type_check.Type_err s ->
+    Util.assert_string_contains s
+      "expect type (Ir.List_type Ir.Unknown_type), got Ir.Str_type"
 
 
 let gen_stats_while _ =
@@ -417,9 +453,11 @@ let gen_comment _ =
 let suite =
   "suite"
   >::: [ "gen_stats_assign" >:: gen_stats_assign
+       ; "gen_stats_not_defined" >:: gen_stats_not_defined
        ; "gen_stats_if" >:: gen_stats_if
        ; "gen_stats_if_1" >:: gen_stats_if_1
        ; "gen_stats_for" >:: gen_stats_for
+       ; "gen_stats_for_1" >:: gen_stats_for_1
        ; "gen_stats_num_binary" >:: gen_stats_num_binary
        ; "gen_stats_num_binary_1" >:: gen_stats_num_binary_1
        ; "gen_stats_num_binary_2" >:: gen_stats_num_binary_2

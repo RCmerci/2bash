@@ -29,11 +29,34 @@ let call arg_l result_var =
   result_var ^ "=$(" ^ arg ^ ")"
 
 
+let exists arg_l result_var =
+  let l1 = Printf.sprintf "[ -f %s ]" (List.hd_exn arg_l) in
+  let l2 = result_var ^ "=$?" in
+  [l1; l2] |> String.concat ~sep:"\n"
+
+
+let list arg_l result_var = result_var ^ "=($(echo " ^ List.hd_exn arg_l ^ "))"
+
+let num arg_l result_var =
+  let arg = List.hd_exn arg_l in
+  let err_info =
+    Printf.sprintf "func num failed: %s can not convert to num type" arg
+  in
+  Printf.sprintf
+    "[ %s -eq %s ] 2>/dev/null && { %s=%s; } || { echo \"%s\";exit 1; }" arg
+    arg result_var arg err_info
+
+
 let builtin_fun_l =
   [ ("printf", printf, `Indefinite ([[Str_type]], Num_type))
   ; ("println", println, `Normal ([[Str_type; Num_type; Bool_type]], Num_type))
   ; ("sprintf", sprintf, `Indefinite ([[Str_type]], Str_type))
-  ; ("call", call, `Normal ([[Str_type]], Str_type)) ]
+  ; ("call", call, `Normal ([[Str_type]], Str_type))
+  ; ("exists", exists, `Normal ([[Str_type]], Bool_type))
+  ; ( "list"
+    , list
+    , `Normal ([[Str_type; Num_type; Bool_type]], List_type Str_type) )
+  ; ("num", num, `Normal ([[Str_type; Bool_type; Num_type]], Num_type)) ]
 
 
 let gen name args =

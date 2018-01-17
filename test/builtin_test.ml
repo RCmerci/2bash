@@ -17,6 +17,32 @@ let fixture_sprintf =
   Util.parse "r=sprintf(\"%s, %d, %d\", \"str\", 123, 1);\nprintln(r);"
 
 
+(*
+println(exists("not-exist-file"));
+ *)
+
+let fixture_exists = Util.parse "println(exists(\"not-exist-file\"));"
+
+(*
+l=list("1 2 3");
+for (i in l) {
+   println(i);
+}
+ *)
+
+let fixture_list =
+  Util.parse "l=list(\"1 2 3\");\nfor (i in l) {\n   println(i);\n}"
+
+
+(*
+a="233";
+b=num(a);
+b=b+1;
+println(b);
+ *)
+
+let fixture_num = Util.parse "a=\"233\";\nb=num(a);\nb=b+1;\nprintln(b);"
+
 let test_call _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_context () in
@@ -45,4 +71,51 @@ let test_sprintf _ =
   assert_equal "str, 123, 1" result
 
 
-let suite = ["test_call" >:: test_call; "test_sprintf" >:: test_sprintf]
+let test_exists _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_exists
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-builtin-exists" |> String.concat
+  in
+  assert_equal "1" result
+
+
+let test_list _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_list
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-builtin-list" |> String.concat
+  in
+  assert_equal "1" result
+
+
+let test_num _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_num
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-builtin-num" |> String.concat
+  in
+  assert_equal "234" result
+
+
+let suite =
+  [ "test_call" >:: test_call
+  ; "test_sprintf" >:: test_sprintf
+  ; "test_exists" >:: test_exists
+  ; "test_list" >:: test_list
+  ; "test_num" >:: test_num ]
