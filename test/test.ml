@@ -156,6 +156,18 @@ let fixture_fun_def_1 =
 
 
 (*
+fun foo(a,b): string -> num -> num {
+   sprintf("%s, %d",a,b );
+}
+r=foo("de", 1);
+println(r);
+ *)
+let fixture_fun_def_2 =
+  Util.parse
+    "fun foo(a,b): string -> num -> num {\n   sprintf(\"%s, %d\",a,b );\n}\nr=foo(\"de\", 1);\nprintln(r);"
+
+
+(*
 fun foo() : string {
     return "aaa";
 }
@@ -408,6 +420,20 @@ let gen_stats_fun_def_1 _ =
     Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
 
 
+let gen_stats_fun_def_2 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_context () in
+  let stats =
+    Compile.compile_statements ctx fixture_fun_def_2
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-fun-def-2" |> String.concat
+  in
+  assert_equal "0" result
+
+
 let gen_stats_return _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_context () in
@@ -469,6 +495,7 @@ let suite =
        ; "gen_stats_while" >:: gen_stats_while
        ; "gen_stats_fun_def" >:: gen_stats_fun_def
        ; "gen_stats_fun_def_1" >:: gen_stats_fun_def_1
+       ; "gen_stats_fun_def_2" >:: gen_stats_fun_def_2
        ; "gen_stats_return" >:: gen_stats_return
        ; "gen_stats_value" >:: gen_stats_value
        ; "gen_comment" >:: gen_comment ]

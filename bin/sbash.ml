@@ -10,16 +10,6 @@ let print_pos (lexbuf: Lexing.lexbuf) =
   ()
 
 
-let () =
-  let src = In_channel.create "test.2bash" in
-  let lexbuf = Lexing.from_channel src in
-  let rec rf lexbuf =
-    Lexer.read lexbuf |> Syntax.show_token |> Out_channel.print_endline ;
-    if not lexbuf.lex_eof_reached then rf lexbuf
-  in
-  rf lexbuf
-
-
 let () = Out_channel.print_endline "=================="
 
 let () =

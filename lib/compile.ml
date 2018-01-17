@@ -229,14 +229,13 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
           List.nth_exn fun_tp (List.length fun_tp - 1) |> string_to_tp
         in
         let append_return_statement =
-          []
-          (* let open Option in *)
-          (* List.last statements' *)
-          (* >>= (fun s -> *)
-          (*       match s with *)
-          (*       | Ir.Return _ -> None *)
-          (*       | _ -> return @@ Ir.Return (zero_value fun_tp_result)) *)
-          (* |> to_list *)
+          let open Option in
+          List.last statements'
+          >>= (fun s ->
+                match s with
+                | Ir.Return _ -> None
+                | _ -> return @@ Ir.Return (zero_value fun_tp_result))
+          |> to_list
         in
         [ Ir.Fun_def
             ( symbol
