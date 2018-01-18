@@ -60,3 +60,7 @@ fun foo(a, b , c): string-> num -> bool -> string
 
 #+END_SRC
 
+** Todo
+- editor support
+- add `break`, `continue`
+- add postion info to compile error
