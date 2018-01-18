@@ -65,8 +65,8 @@ let gen_bool_bool_binary_op = gen_num_bool_binary_op
 
 let rec gen_leftvalue (v: leftvalue) =
   match v with
-  | Identifier (s, tp, is_local) -> (`Var s, tp, is_local)
-  | ListAccess ((lv, num), tp) ->
+  | Identifier {v= s, tp, is_local} -> (`Var s, tp, is_local)
+  | ListAccess {v= (lv, num), tp} ->
       let lv', _, is_local = eval_leftvalue @@ gen_leftvalue lv in
       let num' = eval @@ gen_num_binary num in
       (`Var (lv' ^ "[" ^ num' ^ "]"), tp, is_local)
@@ -166,14 +166,14 @@ and gen_list_binary (v: list_binary) =
 
 and gen_value (v: value) =
   match v with
-  | Left_value v ->
+  | Left_value {v} ->
       let v', _, _ = gen_leftvalue v in
       v'
-  | Num_value v -> gen_num_binary v
-  | Str_value v -> gen_str_binary v
-  | Bool_value v -> gen_bool_binary v
-  | List_binary_value v -> gen_list_binary v
-  | List vl ->
+  | Num_value {v} -> gen_num_binary v
+  | Str_value {v} -> gen_str_binary v
+  | Bool_value {v} -> gen_bool_binary v
+  | List_binary_value {v} -> gen_list_binary v
+  | List {v= vl} ->
       let vl' =
         List.fold vl ~init:[] ~f:(fun r e ->
             let e' = eval @@ gen_value e in
@@ -181,7 +181,7 @@ and gen_value (v: value) =
         |> List.rev
       in
       `Quote ("(" ^ String.concat ~sep:" " vl' ^ ")")
-  | Fun_call (name, vl) ->
+  | Fun_call {v= name, vl} ->
       let vl' =
         List.fold vl ~init:[] ~f:(fun r e ->
             let e' = eval @@ gen_value e in
@@ -232,11 +232,12 @@ let rec gen_statement (v: statement) ~(indent: int) =
       let stats2' = gen_statements stats2 (indent + 1) in
       cond ^ String.concat stats1' ^ with_indent_lines indent "else"
       ^ String.concat stats2' ^ with_indent_lines indent "fi"
-  | For (e, v, stats) ->
+  | For (i, v, stats) ->
+      let i' = extract_leftvalue @@ gen_leftvalue i in
       let v' = eval_loop_value @@ gen_value v in
       let stats' = gen_statements stats (indent + 1) in
       let loop =
-        Printf.sprintf "for %s in %s; do" e v' |> with_indent_lines indent
+        Printf.sprintf "for %s in %s; do" i' v' |> with_indent_lines indent
       in
       loop ^ String.concat stats' ^ with_indent_lines indent "done"
   | While (v, stats) ->

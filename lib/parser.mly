@@ -1,4 +1,5 @@
 %{
+open Core
 open Syntax
 %}
 
@@ -61,13 +62,13 @@ statements:
 ;
 statement:
     | s = SYMBOL; ASSIGN; v = value; SEMICOLON
-      {Assignment (s, v)}
+      {Assignment {v=(s, v);symbol_pos={start_pos=$startpos;end_pos=$endpos(s)}}}
     | IF; LPAREN; v = value; RPAREN; LBRACE; s1 = statements; RBRACE; ELSE; LBRACE; s2 = statements; RBRACE
       {If (v, s1, Some s2)}
     | IF; LPAREN; v = value; RPAREN; LBRACE; s = statements; RBRACE
       {If (v, s, None)}
     | FOR; LPAREN; s = SYMBOL; IN; v = value; RPAREN; LBRACE; s1 = statements; RBRACE
-      {For (s, v, s1)}
+      {For {v=(s, v, s1);symbol_pos={start_pos=$startpos(s);end_pos=$endpos(s)}}}
     | WHILE; LPAREN; v = value; RPAREN; LBRACE; s = statements; RBRACE
       {While (v, s)}
     | FUNCTION; n = SYMBOL; LPAREN; s = symbol_list; RPAREN;COLON; t = fun_type; LBRACE; s1 = statements; RBRACE
@@ -122,7 +123,7 @@ op_value:
     | v1 = value; MINUS; v2 = value
       {Op (v1, Minus, v2)}
     | MINUS; v = value
-      {Op (Basic_value (Num 0), Minus, v)}
+      {Op (Basic_value {v=(Num 0);pos={start_pos=$startpos;end_pos=$endpos}}, Minus, v)}
     | v1 = value; MUL; v2 = value
       {Op (v1, Mul, v2)}
     | v1 = value; DIV; v2 = value
@@ -142,11 +143,11 @@ op_value:
 ;      
 value:
     | s = SYMBOL; LPAREN; vl = value_list; RPAREN
-      {Fun_call (s, vl)}
+      {Fun_call {v=(s, vl);pos={start_pos=$startpos;end_pos=$endpos}}}
     | v = op_value
-      {Op_value v}
+      {Op_value {v;pos={start_pos=$startpos;end_pos=$endpos}}}
     | v = basic_value
-      {Basic_value v}
+      {Basic_value {v;pos={start_pos=$startpos;end_pos=$endpos}}}
     | LPAREN; v = value; RPAREN
       {v}
 ;      

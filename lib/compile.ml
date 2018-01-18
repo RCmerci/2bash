@@ -83,7 +83,7 @@ let string_to_tp s =
 
 let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value =
   match value with
-  | Fun_call (symbol, value_l) ->
+  | Fun_call {v= symbol, value_l; pos} ->
       let value_l' =
         List.map value_l ~f:(compile_value ~extract_leftvalue:false ctx)
       in
@@ -92,26 +92,37 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
         add_statement ctx
           (Ir.Assignment
              ( Ir.Identifier
-                 (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
-             , Ir.Fun_call (symbol, value_l') ))
+                 { v= (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                 ; meta= {pos= Some pos} }
+             , Ir.Fun_call {v= (symbol, value_l'); meta= {pos= Some pos}} ))
       in
       Ir.Left_value
-        (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
-  | Basic_value v ->
+        { v=
+            Ir.Identifier
+              { v= (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+              ; meta= {pos= Some pos} }
+        ; meta= {pos= Some pos} }
+  | Basic_value {v; pos} ->
       let is_symbol v = match v with Symbol _ -> true | _ -> false in
       let value' =
         match v with
-        | Num num -> Ir.Num_value (Ir.Num num)
-        | String s -> Ir.Str_value (Ir.Str s)
-        | Bool v -> Ir.Bool_value (Ir.Bool v)
+        | Num num -> Ir.Num_value {v= Ir.Num num; meta= {pos= Some pos}}
+        | String s -> Ir.Str_value {v= Ir.Str s; meta= {pos= Some pos}}
+        | Bool v -> Ir.Bool_value {v= Ir.Bool v; meta= {pos= Some pos}}
         | List vl ->
             Ir.List
-              (List.rev
-                 (List.fold vl ~init:[] ~f:(fun r v ->
-                      compile_value ~extract_leftvalue:false ctx v :: r )))
+              { v=
+                  List.rev
+                    (List.fold vl ~init:[] ~f:(fun r v ->
+                         compile_value ~extract_leftvalue:false ctx v :: r ))
+              ; meta= {pos= Some pos} }
         | Symbol v ->
             Ir.Left_value
-              (Ir.Identifier (v, Ir.Unknown_type, is_local_var ctx v))
+              { v=
+                  Ir.Identifier
+                    { v= (v, Ir.Unknown_type, is_local_var ctx v)
+                    ; meta= {pos= Some pos} }
+              ; meta= {pos= Some pos} }
       in
       if extract_leftvalue && not (is_symbol v) then
         let tmp_var = generate_tmp_var ctx in
@@ -119,42 +130,70 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
           add_statement ctx
             (Ir.Assignment
                ( Ir.Identifier
-                   (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                   { v= (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                   ; meta= {pos= Some pos} }
                , value' ))
         in
         Ir.Left_value
-          (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
+          { v=
+              Ir.Identifier
+                { v= (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                ; meta= {pos= Some pos} }
+          ; meta= {pos= Some pos} }
       else value'
-  | Op_value Op (v1, op, v2) ->
+  | Op_value {v= Op (v1, op, v2); pos} ->
       let v1' = compile_value ~extract_leftvalue:true ctx v1 in
       let v2' = compile_value ~extract_leftvalue:true ctx v2 in
       let result_value =
         match (v1', v2', op) with
-        | Left_value v1, Left_value v2, String_plus ->
-            Ir.Str_value (Ir.Str_leftvalue_binary (Ir.Str_plus, v1, v2))
-        | Left_value v1, Left_value v2, List_plus ->
+        | Left_value {v= v1}, Left_value {v= v2}, String_plus ->
+            Ir.Str_value
+              { v= Ir.Str_leftvalue_binary (Ir.Str_plus, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, List_plus ->
             Ir.List_binary_value
-              (Ir.List_leftvalue_binary (Ir.List_plus, v1, v2))
-        | Left_value v1, Left_value v2, Plus ->
-            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Plus, v1, v2))
-        | Left_value v1, Left_value v2, Minus ->
-            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Minus, v1, v2))
-        | Left_value v1, Left_value v2, Mul ->
-            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Mul, v1, v2))
-        | Left_value v1, Left_value v2, Div ->
-            Ir.Num_value (Ir.Num_leftvalue_binary (Ir.Div, v1, v2))
-        | Left_value v1, Left_value v2, Gt ->
-            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Gt, v1, v2))
-        | Left_value v1, Left_value v2, Lt ->
-            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Lt, v1, v2))
-        | Left_value v1, Left_value v2, Ge ->
-            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Ge, v1, v2))
-        | Left_value v1, Left_value v2, Le ->
-            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Le, v1, v2))
-        | Left_value v1, Left_value v2, Neq ->
-            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Neq, v1, v2))
-        | Left_value v1, Left_value v2, Eq ->
-            Ir.Bool_value (Ir.Bool_leftvalue_binary (Ir.Eq, v1, v2))
+              { v= Ir.List_leftvalue_binary (Ir.List_plus, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Plus ->
+            Ir.Num_value
+              { v= Ir.Num_leftvalue_binary (Ir.Plus, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Minus ->
+            Ir.Num_value
+              { v= Ir.Num_leftvalue_binary (Ir.Minus, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Mul ->
+            Ir.Num_value
+              { v= Ir.Num_leftvalue_binary (Ir.Mul, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Div ->
+            Ir.Num_value
+              { v= Ir.Num_leftvalue_binary (Ir.Div, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Gt ->
+            Ir.Bool_value
+              { v= Ir.Bool_leftvalue_binary (Ir.Gt, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Lt ->
+            Ir.Bool_value
+              { v= Ir.Bool_leftvalue_binary (Ir.Lt, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Ge ->
+            Ir.Bool_value
+              { v= Ir.Bool_leftvalue_binary (Ir.Ge, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Le ->
+            Ir.Bool_value
+              { v= Ir.Bool_leftvalue_binary (Ir.Le, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Neq ->
+            Ir.Bool_value
+              { v= Ir.Bool_leftvalue_binary (Ir.Neq, v1, v2)
+              ; meta= {pos= Some pos} }
+        | Left_value {v= v1}, Left_value {v= v2}, Eq ->
+            Ir.Bool_value
+              { v= Ir.Bool_leftvalue_binary (Ir.Eq, v1, v2)
+              ; meta= {pos= Some pos} }
         | _, _, _ -> assert false
       in
       if extract_leftvalue then
@@ -163,33 +202,39 @@ let rec compile_value ?(extract_leftvalue= false) ctx (value: value) : Ir.value 
           add_statement ctx
             (Ir.Assignment
                ( Ir.Identifier
-                   (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                   { v= (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                   ; meta= {pos= Some pos} }
                , result_value ))
         in
         Ir.Left_value
-          (Ir.Identifier (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var))
+          { v=
+              Ir.Identifier
+                { v= (tmp_var, Ir.Unknown_type, is_local_var ctx tmp_var)
+                ; meta= {pos= Some pos} }
+          ; meta= {pos= Some pos} }
       else result_value
 
 
 let zero_value tp =
   match tp with
-  | Ir.Num_type -> Ir.Num_value (Ir.Num 0)
-  | Ir.Str_type -> Ir.Str_value (Ir.Str "")
-  | Ir.List_type _ -> Ir.List []
-  | Ir.Bool_type -> Ir.Bool_value (Ir.Bool false)
+  | Ir.Num_type -> Ir.Num_value {v= Ir.Num 0; meta= {pos= None}}
+  | Ir.Str_type -> Ir.Str_value {v= Ir.Str ""; meta= {pos= None}}
+  | Ir.List_type _ -> Ir.List {v= []; meta= {pos= None}}
+  | Ir.Bool_type -> Ir.Bool_value {v= Ir.Bool false; meta= {pos= None}}
   | Ir.Unknown_type -> assert false
 
 
 let rec compile_statement ctx (statement: statement) : Ir.statements =
   let f () =
     match statement with
-    | Assignment (symbol, value) ->
+    | Assignment {v= symbol, value; symbol_pos} ->
         let ir_value = compile_value ctx value in
         let () =
           add_statement ctx
             (Ir.Assignment
                ( Ir.Identifier
-                   (symbol, Ir.Unknown_type, is_local_var ctx symbol)
+                   { v= (symbol, Ir.Unknown_type, is_local_var ctx symbol)
+                   ; meta= {pos= Some symbol_pos} }
                , ir_value ))
         in
         get_statements ctx
@@ -205,11 +250,16 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
         let cond_statements = get_statements ctx in
         let statements' = compile_statements ctx statements in
         cond_statements @ [Ir.If (condition, statements')]
-    | For (symbol, value, statements) ->
+    | For {v= symbol, value, statements; symbol_pos} ->
         let loop_value = compile_value ~extract_leftvalue:true ctx value in
         let loop_statements = get_statements ctx in
         let statements' = compile_statements ctx statements in
-        loop_statements @ [Ir.For (symbol, loop_value, statements')]
+        let lv =
+          Ir.Identifier
+            { v= (symbol, Ir.Unknown_type, is_local_var ctx symbol)
+            ; meta= {pos= Some symbol_pos} }
+        in
+        loop_statements @ [Ir.For (lv, loop_value, statements')]
     | While (value, statements) ->
         let loop_value = compile_value ctx value in
         let loop_statements = get_statements ctx in

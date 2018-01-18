@@ -2,11 +2,16 @@ open Core
 open Sbash_lib
 
 let print_pos (lexbuf: Lexing.lexbuf) =
-  let p = lexbuf.lex_curr_p in
+  let p = lexbuf.lex_start_p in
   let () = Out_channel.printf "fname: %s\n" p.pos_fname in
   let () = Out_channel.printf "lnum: %d\n" p.pos_lnum in
   let () = Out_channel.printf "bol: %d\n" p.pos_bol in
   let () = Out_channel.printf "cnum: %d\n" p.pos_cnum in
+  let p1 = lexbuf.lex_curr_p in
+  let () = Out_channel.printf "fname: %s\n" p1.pos_fname in
+  let () = Out_channel.printf "lnum: %d\n" p1.pos_lnum in
+  let () = Out_channel.printf "bol: %d\n" p1.pos_bol in
+  let () = Out_channel.printf "cnum: %d\n" p1.pos_cnum in
   ()
 
 

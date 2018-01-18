@@ -1,3 +1,5 @@
+type meta = {pos: Position.position_region option} [@@deriving show]
+
 type tp =
   | Num_type
   | Str_type
@@ -23,8 +25,8 @@ and num_binary_op = Plus | Minus | Mul | Div [@@deriving show]
 
 and leftvalue =
   (* (name, type, local) *)
-  | Identifier of (string * tp * bool)
-  | ListAccess of ((leftvalue * num_binary) * tp)
+  | Identifier of {v: (string * tp * bool); meta: meta}
+  | ListAccess of {v: ((leftvalue * num_binary) * tp); meta: meta}
   [@@deriving show]
 
 and str_binary =
@@ -53,20 +55,20 @@ and list_binary =
 and list_binary_op = List_plus [@@deriving show]
 
 type value =
-  | Left_value of leftvalue
-  | Num_value of num_binary
-  | Str_value of str_binary
-  | Bool_value of bool_binary
-  | List_binary_value of list_binary
-  | List of value list
-  | Fun_call of (string * value list)
+  | Left_value of {v: leftvalue; meta: meta}
+  | Num_value of {v: num_binary; meta: meta}
+  | Str_value of {v: str_binary; meta: meta}
+  | Bool_value of {v: bool_binary; meta: meta}
+  | List_binary_value of {v: list_binary; meta: meta}
+  | List of {v: value list; meta: meta}
+  | Fun_call of {v: (string * value list); meta: meta}
   [@@deriving show]
 
 and statement =
   | Assignment of (leftvalue * value)
   | If of (value * statements)
   | If_else of (value * statements * statements)
-  | For of (string * value * statements)
+  | For of (leftvalue * value * statements)
   | While of (value * statements)
   | Fun_def of (string * string list * statements * fun_tp)
   | Return of value

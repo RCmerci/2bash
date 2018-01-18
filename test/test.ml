@@ -220,7 +220,7 @@ let gen_stats_num_binary_1 _ =
     Compile.compile_statements ctx fixture_num_binary_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err s ->
+  try stats () with Type_check.Type_err (s, _) ->
     Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
 
 
@@ -231,7 +231,7 @@ let gen_stats_num_binary_2 _ =
     Compile.compile_statements ctx fixture_num_binary_2
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err s ->
+  try stats () with Type_check.Type_err (s, _) ->
     Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
 
 
@@ -256,7 +256,7 @@ let gen_stats_str_binary_1 _ =
     Compile.compile_statements ctx fixture_str_binary_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err s ->
+  try stats () with Type_check.Type_err (s, _) ->
     Util.assert_string_contains s "expect type Ir.Str_type, got Ir.Num_type"
 
 
@@ -323,7 +323,7 @@ let gen_stats_not_defined _ =
     Compile.compile_statements ctx fixture_not_defined
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err s ->
+  try stats () with Type_check.Type_err (s, _) ->
     Util.assert_string_contains s "not defined yet"
 
 
@@ -376,7 +376,7 @@ let gen_stats_for_1 _ =
     Compile.compile_statements ctx fixture_for_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err s ->
+  try stats () with Type_check.Type_err (s, _) ->
     Util.assert_string_contains s
       "expect type (Ir.List_type Ir.Unknown_type), got Ir.Str_type"
 
@@ -416,7 +416,7 @@ let gen_stats_fun_def_1 _ =
     Compile.compile_statements ctx fixture_fun_def_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err s ->
+  try stats () with Type_check.Type_err (s, _) ->
     Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
 
 

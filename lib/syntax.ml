@@ -34,15 +34,17 @@ and basic_value =
 and op_value = Op of (value * op * value) [@@deriving show]
 
 and value =
-  | Fun_call of (symbol * value list)
-  | Op_value of op_value
-  | Basic_value of basic_value
+  | Fun_call of {v: (symbol * value list); pos: Position.position_region}
+  | Op_value of {v: op_value; pos: Position.position_region}
+  | Basic_value of {v: basic_value; pos: Position.position_region}
   [@@deriving show]
 
 type statement =
-  | Assignment of (symbol * value)
+  | Assignment of {v: (symbol * value); symbol_pos: Position.position_region}
   | If of (value * statements * statements option)
-  | For of (symbol * value * statements)
+  | For of
+      { v: (symbol * value * statements)
+      ; symbol_pos: Position.position_region }
   | While of (value * statements)
   | Function of (symbol * symbol list * statements * string list)
   | Return of value
