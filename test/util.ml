@@ -39,3 +39,16 @@ let run_shell ?(tmp_file_name= "tmp") ?(rm_tmp_file= false) s =
 
 let assert_string_contains s sub =
   Option.is_some (String.substr_index s sub) |> OUnit2.assert_bool s
+
+
+let assert_position (p: Position.position option) cnum =
+  if Option.is_none p then OUnit2.assert_bool "none position" false
+  else
+    let p' = Option.value_exn p in
+    let desc = Position.show_position p' in
+    OUnit2.assert_bool desc (phys_equal p'.pos_cnum cnum)
+
+
+let assert_position_region (p: Position.position_region option) cnum =
+  let p' = Option.(p >>= fun p' -> return p'.start_pos) in
+  assert_position p' cnum

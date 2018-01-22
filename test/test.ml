@@ -220,8 +220,10 @@ let gen_stats_num_binary_1 _ =
     Compile.compile_statements ctx fixture_num_binary_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err (s, _) ->
-    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
+  try stats () with Type_check.Type_err (s, p) ->
+    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type" ;
+    (* TODO: fix wrong STRING token position *)
+    Util.assert_position_region p 4
 
 
 let gen_stats_num_binary_2 _ =
@@ -231,8 +233,9 @@ let gen_stats_num_binary_2 _ =
     Compile.compile_statements ctx fixture_num_binary_2
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err (s, _) ->
-    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
+  try stats () with Type_check.Type_err (s, p) ->
+    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type" ;
+    Util.assert_position_region p 40
 
 
 let gen_stats_str_binary _ =
@@ -256,8 +259,9 @@ let gen_stats_str_binary_1 _ =
     Compile.compile_statements ctx fixture_str_binary_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err (s, _) ->
-    Util.assert_string_contains s "expect type Ir.Str_type, got Ir.Num_type"
+  try stats () with Type_check.Type_err (s, p) ->
+    Util.assert_string_contains s "expect type Ir.Str_type, got Ir.Num_type" ;
+    Util.assert_position_region p 2
 
 
 let gen_stats_bool_binary _ =
@@ -323,8 +327,9 @@ let gen_stats_not_defined _ =
     Compile.compile_statements ctx fixture_not_defined
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err (s, _) ->
-    Util.assert_string_contains s "not defined yet"
+  try stats () with Type_check.Type_err (s, p) ->
+    Util.assert_string_contains s "not defined yet" ;
+    Util.assert_position_region p 2
 
 
 let gen_stats_if _ =
@@ -376,9 +381,10 @@ let gen_stats_for_1 _ =
     Compile.compile_statements ctx fixture_for_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err (s, _) ->
+  try stats () with Type_check.Type_err (s, p) ->
     Util.assert_string_contains s
-      "expect type (Ir.List_type Ir.Unknown_type), got Ir.Str_type"
+      "expect type (Ir.List_type Ir.Unknown_type), got Ir.Str_type" ;
+    Util.assert_position_region p 1
 
 
 let gen_stats_while _ =
@@ -416,8 +422,9 @@ let gen_stats_fun_def_1 _ =
     Compile.compile_statements ctx fixture_fun_def_1
     |> Type_check.check_statements ctx' |> ignore
   in
-  try stats () with Type_check.Type_err (s, _) ->
-    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type"
+  try stats () with Type_check.Type_err (s, p) ->
+    Util.assert_string_contains s "expect type Ir.Num_type, got Ir.Str_type" ;
+    Util.assert_position_region p 1
 
 
 let gen_stats_fun_def_2 _ =
@@ -478,8 +485,7 @@ let gen_comment _ =
 
 let suite =
   "suite"
-  >::: [ "gen_stats_assign" >:: gen_stats_assign
-       ; "gen_stats_not_defined" >:: gen_stats_not_defined
+  >::: [ "gen_stats_not_defined" >:: gen_stats_not_defined
        ; "gen_stats_if" >:: gen_stats_if
        ; "gen_stats_if_1" >:: gen_stats_if_1
        ; "gen_stats_for" >:: gen_stats_for
@@ -498,7 +504,8 @@ let suite =
        ; "gen_stats_fun_def_2" >:: gen_stats_fun_def_2
        ; "gen_stats_return" >:: gen_stats_return
        ; "gen_stats_value" >:: gen_stats_value
-       ; "gen_comment" >:: gen_comment ]
+       ; "gen_comment" >:: gen_comment
+       ; "gen_stats_assign" >:: gen_stats_assign ]
        @ Builtin_test.suite
 
 

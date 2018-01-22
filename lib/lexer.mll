@@ -40,7 +40,7 @@ rule read =
      | '*'	{next_token lexbuf;MUL}
      | '/'	{next_token lexbuf;DIV}
      | ';'	{next_token lexbuf;SEMICOLON}
-     | '"'      {next_token lexbuf;read_string (Buffer.create 15) lexbuf}
+     | '"'      {next_token lexbuf;read_string (Buffer.create 15) lexbuf }
      | "//"	{next_token lexbuf;read_comment lexbuf}
      | ">="	{next_token lexbuf;GE}
      | "<="	{next_token lexbuf;LE}
@@ -64,18 +64,18 @@ rule read =
      
 and read_string buf =
     parse
-    | '"'		{STRING (Buffer.contents buf)}
-    | '\\' '\\'		{Buffer.add_char buf '\\';read_string buf lexbuf}
-    | '\\' 'n'		{Buffer.add_char buf '\n';read_string buf lexbuf}
-    | '\\' 't'		{Buffer.add_char buf '\t';read_string buf lexbuf}
-    | '\\' 'r'		{Buffer.add_char buf '\r';read_string buf lexbuf}
-    | [^ '"' '\\']+	{Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf} 
+    | '"'		{next_token lexbuf;STRING (Buffer.contents buf)}
+    | '\\' '\\'		{next_token lexbuf;Buffer.add_char buf '\\';read_string buf lexbuf}
+    | '\\' 'n'		{next_token lexbuf;Buffer.add_char buf '\n';read_string buf lexbuf}
+    | '\\' 't'		{next_token lexbuf;Buffer.add_char buf '\t';read_string buf lexbuf}
+    | '\\' 'r'		{next_token lexbuf;Buffer.add_char buf '\r';read_string buf lexbuf}
+    | [^ '"' '\\']+	{next_token lexbuf;Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf} 
     | _			{raise (SyntaxError ("illegal string:" ^ Lexing.lexeme lexbuf))}
     | eof		{raise (SyntaxError "string is not terminated")}
 
 
 and read_comment =
     parse
-    | '\n'	{read lexbuf}
+    | '\n'	{next_line lexbuf;read lexbuf}
     | eof	{lexbuf.lex_eof_reached<-true;EOF}
-    | _ 	{read_comment lexbuf}
+    | _ 	{next_token lexbuf;read_comment lexbuf}

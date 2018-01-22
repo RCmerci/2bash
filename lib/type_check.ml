@@ -3,11 +3,17 @@ open Ir
 module S = Scope.StrMapScope
 
 type context =
-  { mutable scope: tp S.t
-  ; mutable fun_scope: fun_tp S.t
-  ; mutable return_type_scope: tp Scope.ListScope.t }
+  { mutable scope: tp S.t (* var-tp map *)
+  ; mutable fun_scope: fun_tp S.t (* fun-tp map *)
+  ; mutable return_type_scope: tp Scope.ListScope.t
+  (* return-type *) }
 
 exception Type_err of (string * Position.position_region option)
+
+let catch_and_raise_type_err_with_pos (f: unit -> 'a) ~pos =
+  if Option.is_none pos then f ()
+  else try f () with Type_err (desc, None) -> raise (Type_err (desc, pos))
+
 
 let make_context () =
   let fun_scope = S.make () in
@@ -111,14 +117,14 @@ let expect_tp' ~name t expect =
   | _ -> t = expect
 
 
-let expect_tp ~name t expect_l =
+let expect_tp ?pos ~name t expect_l =
   if not (List.exists expect_l ~f:(fun e -> expect_tp' ~name t e)) then
     raise
       (Type_err
          ( Printf.sprintf "[%s] expect type %s, got %s" name
              (String.concat ~sep:" or " (List.map expect_l show_tp))
              (show_tp t)
-         , None ))
+         , pos ))
 
 
 let rec leftvalue_name v =
@@ -281,23 +287,37 @@ and check_list_binary ctx v =
 and check_value ctx v =
   match v with
   | Left_value {v; meta} ->
-      let v_tp = get_leftvalue_tp ctx v in
-      if Option.is_none v_tp then
-        raise
-          (Type_err
-             ( Printf.sprintf "variable[%s] not defined yet"
-                 (extract_leftvalue v)
-             , None ))
-      else Left_value {v= inject_leftvalue_tp v (Option.value_exn v_tp); meta}
-  | Num_value {v; meta} -> Num_value {v= check_num_binary ctx v; meta}
-  | Str_value {v; meta} -> Str_value {v= check_str_binary ctx v; meta}
-  | Bool_value {v; meta} -> Bool_value {v= check_bool_binary ctx v; meta}
+      let f () =
+        let v_tp = get_leftvalue_tp ctx v in
+        if Option.is_none v_tp then
+          raise
+            (Type_err
+               ( Printf.sprintf "variable[%s] not defined yet"
+                   (extract_leftvalue v)
+               , None ))
+        else Left_value {v= inject_leftvalue_tp v (Option.value_exn v_tp); meta}
+      in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
+  | Num_value {v; meta} ->
+      let f () = Num_value {v= check_num_binary ctx v; meta} in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
+  | Str_value {v; meta} ->
+      let f () = Str_value {v= check_str_binary ctx v; meta} in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
+  | Bool_value {v; meta} ->
+      let f () = Bool_value {v= check_bool_binary ctx v; meta} in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
   | List_binary_value {v; meta} ->
-      List_binary_value {v= check_list_binary ctx v; meta}
+      let f () = List_binary_value {v= check_list_binary ctx v; meta} in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
   | List {v= vl; meta} ->
-      List {v= List.map vl ~f:(fun e -> check_value ctx e); meta}
+      let f () = List {v= List.map vl ~f:(fun e -> check_value ctx e); meta} in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
   | Fun_call {v= name, vl; meta} ->
-      Fun_call {v= (name, List.map vl ~f:(fun e -> check_value ctx e)); meta}
+      let f () =
+        Fun_call {v= (name, List.map vl ~f:(fun e -> check_value ctx e)); meta}
+      in
+      catch_and_raise_type_err_with_pos ~pos:meta.pos f
 
 
 and check_statement ctx s =
@@ -307,31 +327,22 @@ and check_statement ctx s =
       let v_tp = get_value_tp ctx v' in
       let () =
         match lv with
-        | Identifier {v= name, _, is_local} ->
-            if is_local then (
-              let tp = get_leftvalue_tp_local ctx lv in
-              if Option.is_some tp then
-                if Option.value_exn tp <> v_tp then
-                  raise
-                    (Type_err
-                       ( Printf.sprintf "var[%s] has type %s, can not be %s"
-                           name
-                           (show_tp (Option.value_exn tp))
-                           (show_tp v_tp)
-                       , None )) )
-            else
-              let tp = get_leftvalue_tp ctx lv in
-              if Option.is_some tp then
-                if Option.value_exn tp <> v_tp then
-                  raise
-                    (Type_err
-                       ( Printf.sprintf "var[%s] has type %s, can not be %s"
-                           name
-                           (show_tp (Option.value_exn tp))
-                           (show_tp v_tp)
-                       , None )) ;
-              add_leftvalue_tp ctx name v_tp
-        | ListAccess {v= (lv', _), _} ->
+        | Identifier {v= name, _, is_local; meta} ->
+            let tp =
+              if is_local then get_leftvalue_tp_local ctx lv
+              else get_leftvalue_tp ctx lv
+            in
+            if Option.is_some tp then
+              if Option.value_exn tp <> v_tp then
+                raise
+                  (Type_err
+                     ( Printf.sprintf "var[%s] has type %s, can not be %s" name
+                         (show_tp (Option.value_exn tp))
+                         (show_tp v_tp)
+                     , meta.pos ))
+              else ()
+            else add_leftvalue_tp ctx name v_tp
+        | ListAccess {v= (lv', _), _; meta} ->
             let tp = get_leftvalue_tp_exn ctx lv' in
             let name = extract_leftvalue lv in
             let inner_name = extract_leftvalue lv' in
@@ -342,14 +353,14 @@ and check_statement ctx s =
                     (Type_err
                        ( Printf.sprintf "var[%s] has type %s, can not be %s"
                            name (show_tp inner) (show_tp v_tp)
-                       , None ))
+                       , meta.pos ))
             | _ ->
                 raise
                   (Type_err
                      ( Printf.sprintf
                          "var[%s] has type %s, can not apply list access"
                          inner_name (show_tp tp)
-                     , None ))
+                     , meta.pos ))
       in
       Assignment (inject_leftvalue_tp lv v_tp, v')
   | If (v, stats) ->
@@ -365,9 +376,10 @@ and check_statement ctx s =
       let name =
         match i with
         | Identifier {v= name, _, _} -> name
-        | ListAccess _ ->
+        | ListAccess {meta} ->
             raise
-              (Type_err ("for-loop var can't be listaccess(e.g. a[i])", None))
+              (Type_err
+                 ("for-loop var can't be listaccess(e.g. a[i])", meta.pos))
       in
       let v' = check_value ctx v in
       let v_tp = get_value_tp ctx v' in
