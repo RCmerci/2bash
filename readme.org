@@ -60,7 +60,41 @@ fun foo(a, b , c): string-> num -> bool -> string
 
 #+END_SRC
 
+
+
+
+
+** Builtin Functions
+*** println
+    - string|num|bool -> num
+
+      print arg to stdout with newline.
+*** printf
+    - string->...->num
+*** sprintf
+    - string->...->string
+      
+      return formated string
+*** call
+    - string -> string
+      
+      call external shell command, return its stdout output as string.
+
+      e.g. call("ls -l");
+*** exists
+    - string -> bool
+      
+      test if the file(arg) exists or not.
+*** list
+    - string|num|bool -> string list
+      
+      convert string|num|bool to string list
+
+*** num
+    - string|bool|num -> num
+
+      convert string|bool|num to num
 ** Todo
-- editor support
-- add `break`, `continue`
-- add postion info to compile error
+    - editor support
+    - add `break`, `continue` 
+    - +add postion info to compile error+
