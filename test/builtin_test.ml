@@ -45,7 +45,7 @@ let fixture_num = Util.parse "a=\"233\";\nb=num(a);\nb=b+1;\nprintln(b);"
 
 let test_call _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_call
     |> Type_check.check_statements ctx'
@@ -59,7 +59,7 @@ let test_call _ =
 
 let test_sprintf _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_sprintf
     |> Type_check.check_statements ctx'
@@ -73,7 +73,7 @@ let test_sprintf _ =
 
 let test_exists _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_exists
     |> Type_check.check_statements ctx'
@@ -87,7 +87,7 @@ let test_exists _ =
 
 let test_list _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_list
     |> Type_check.check_statements ctx'
@@ -101,7 +101,7 @@ let test_list _ =
 
 let test_num _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_num
     |> Type_check.check_statements ctx'

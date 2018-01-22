@@ -1,27 +1,33 @@
 open Core
 open Sbash_lib
 
-let print_pos (lexbuf: Lexing.lexbuf) =
-  let p = lexbuf.lex_start_p in
-  let () = Out_channel.printf "fname: %s\n" p.pos_fname in
-  let () = Out_channel.printf "lnum: %d\n" p.pos_lnum in
-  let () = Out_channel.printf "bol: %d\n" p.pos_bol in
-  let () = Out_channel.printf "cnum: %d\n" p.pos_cnum in
-  let p1 = lexbuf.lex_curr_p in
-  let () = Out_channel.printf "fname: %s\n" p1.pos_fname in
-  let () = Out_channel.printf "lnum: %d\n" p1.pos_lnum in
-  let () = Out_channel.printf "bol: %d\n" p1.pos_bol in
-  let () = Out_channel.printf "cnum: %d\n" p1.pos_cnum in
-  ()
-
-
-let () = Out_channel.print_endline "=================="
-
-let () =
-  let src = In_channel.create "test.2bash" in
-  let lexbuf = Lexing.from_channel src in
-  let stat =
-    try Parser.prog Lexer.read lexbuf with Parser.Error as e ->
-      print_pos lexbuf ; raise e
+let compile =
+  let spec =
+    let open Command.Spec in
+    empty +> anon ("file" %: file)
+    +> flag "-o" (optional_with_default "2bash.sh" file) ~doc:"output filename"
   in
-  Out_channel.print_endline (Syntax.show_statements stat)
+  Command.basic ~summary:"compile 2bash file" spec (fun src dst () ->
+      let src' = In_channel.create src in
+      let lexbuf = Lexing.from_channel src' in
+      let stats =
+        try Parser.prog Lexer.read lexbuf with Parser.Error as e ->
+          Out_channel.print_endline "parser error" ;
+          Position.show_position lexbuf.lex_start_p
+          |> Out_channel.print_endline ;
+          raise e
+      in
+      let compile_ctx = Compile.make_ctx () in
+      let typecheck_ctx = Type_check.make_ctx () in
+      let stats' =
+        Compile.compile_statements compile_ctx stats
+        |> Type_check.check_statements typecheck_ctx
+      in
+      let result = Generate.gen_statements stats' 0 in
+      let dst' = Out_channel.create dst in
+      Out_channel.output_lines dst' result )
+
+
+let group = Command.group ~summary:"" [("compile", compile)]
+
+let () = Command.run group

@@ -15,7 +15,7 @@ let catch_and_raise_type_err_with_pos (f: unit -> 'a) ~pos =
   else try f () with Type_err (desc, None) -> raise (Type_err (desc, pos))
 
 
-let make_context () =
+let make_ctx () =
   let fun_scope = S.make () in
   Builtin.inject_builtin_tp fun_scope ;
   {scope= S.make (); fun_scope; return_type_scope= Scope.ListScope.make ()}

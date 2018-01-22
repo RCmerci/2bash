@@ -201,7 +201,7 @@ let fixture_comment =
 
 let gen_stats_num_binary _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_num_binary
     |> Type_check.check_statements ctx'
@@ -215,7 +215,7 @@ let gen_stats_num_binary _ =
 
 let gen_stats_num_binary_1 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats () =
     Compile.compile_statements ctx fixture_num_binary_1
     |> Type_check.check_statements ctx' |> ignore
@@ -228,7 +228,7 @@ let gen_stats_num_binary_1 _ =
 
 let gen_stats_num_binary_2 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats () =
     Compile.compile_statements ctx fixture_num_binary_2
     |> Type_check.check_statements ctx' |> ignore
@@ -240,7 +240,7 @@ let gen_stats_num_binary_2 _ =
 
 let gen_stats_str_binary _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_str_binary
     |> Type_check.check_statements ctx'
@@ -254,7 +254,7 @@ let gen_stats_str_binary _ =
 
 let gen_stats_str_binary_1 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats () =
     Compile.compile_statements ctx fixture_str_binary_1
     |> Type_check.check_statements ctx' |> ignore
@@ -266,7 +266,7 @@ let gen_stats_str_binary_1 _ =
 
 let gen_stats_bool_binary _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_bool_binary
     |> Type_check.check_statements ctx'
@@ -280,7 +280,7 @@ let gen_stats_bool_binary _ =
 
 let gen_stats_bool_binary_1 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_bool_binary_1
     |> Type_check.check_statements ctx'
@@ -294,7 +294,7 @@ let gen_stats_bool_binary_1 _ =
 
 let gen_stats_bool_binary_2 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_bool_binary_2
     |> Type_check.check_statements ctx'
@@ -308,7 +308,7 @@ let gen_stats_bool_binary_2 _ =
 
 let gen_stats_assign _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_assign
     |> Type_check.check_statements ctx'
@@ -322,7 +322,7 @@ let gen_stats_assign _ =
 
 let gen_stats_not_defined _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats () =
     Compile.compile_statements ctx fixture_not_defined
     |> Type_check.check_statements ctx' |> ignore
@@ -334,7 +334,7 @@ let gen_stats_not_defined _ =
 
 let gen_stats_if _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_if
     |> Type_check.check_statements ctx'
@@ -348,7 +348,7 @@ let gen_stats_if _ =
 
 let gen_stats_if_1 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_if_1
     |> Type_check.check_statements ctx'
@@ -362,7 +362,7 @@ let gen_stats_if_1 _ =
 
 let gen_stats_for _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_for
     |> Type_check.check_statements ctx'
@@ -376,7 +376,7 @@ let gen_stats_for _ =
 
 let gen_stats_for_1 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats () =
     Compile.compile_statements ctx fixture_for_1
     |> Type_check.check_statements ctx' |> ignore
@@ -389,7 +389,7 @@ let gen_stats_for_1 _ =
 
 let gen_stats_while _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_while
     |> Type_check.check_statements ctx'
@@ -403,7 +403,7 @@ let gen_stats_while _ =
 
 let gen_stats_fun_def _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_fun_def
     |> Type_check.check_statements ctx'
@@ -417,7 +417,7 @@ let gen_stats_fun_def _ =
 
 let gen_stats_fun_def_1 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats () =
     Compile.compile_statements ctx fixture_fun_def_1
     |> Type_check.check_statements ctx' |> ignore
@@ -429,7 +429,7 @@ let gen_stats_fun_def_1 _ =
 
 let gen_stats_fun_def_2 _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_fun_def_2
     |> Type_check.check_statements ctx'
@@ -443,7 +443,7 @@ let gen_stats_fun_def_2 _ =
 
 let gen_stats_return _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_return
     |> Type_check.check_statements ctx'
@@ -457,7 +457,7 @@ let gen_stats_return _ =
 
 let gen_stats_value _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_value
     |> Type_check.check_statements ctx'
@@ -471,7 +471,7 @@ let gen_stats_value _ =
 
 let gen_comment _ =
   let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_context () in
+  let ctx' = Type_check.make_ctx () in
   let stats =
     Compile.compile_statements ctx fixture_comment
     |> Type_check.check_statements ctx'
