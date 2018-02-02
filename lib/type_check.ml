@@ -144,7 +144,7 @@ let rec inject_leftvalue_tp v tp =
 let rec get_list_binary_tp ctx v =
   match v with
   | List_binary (_, v1, _) -> get_list_binary_tp ctx v1
-  | List_leftvalue_binary (_, v1, _) -> List_type (get_leftvalue_tp_exn ctx v1)
+  | List_leftvalue_binary (_, v1, _) -> get_leftvalue_tp_exn ctx v1
 
 
 let rec get_value_tp ctx v =

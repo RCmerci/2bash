@@ -15,7 +15,7 @@ type generated =
 let eval ?(fun_call_result_var= "") v =
   match v with
   | `Quote v' -> v'
-  | `Var v' -> "${" ^ v' ^ "}"
+  | `Var v' -> "${" ^ v' ^ "[@]}"
   | `Fun_call v' -> v' fun_call_result_var
   | `Raw v' -> "$(" ^ v' ^ ")"
 
@@ -258,7 +258,23 @@ let rec gen_statement (v: statement) ~(indent: int) =
       def ^ String.concat (args' @ stats') ^ with_indent_lines indent "}"
   | Return v ->
       let v' = eval @@ gen_value v in
-      "eval $__fun_result_var=" ^ v' |> with_indent_lines indent
+      let value_add_backslash v =
+        let open String in
+        match prefix v 1 with
+        | "(" ->
+            substr_replace_first v "(" "\\("
+            |> substr_replace_first
+                 ~pos:(length v - 1)
+                 ~pattern:")" ~with_:"\\)"
+        | "\"" ->
+            substr_replace_first v "\"" "\\\""
+            |> substr_replace_first
+                 ~pos:(length v - 1)
+                 ~pattern:"\"" ~with_:"\\\""
+        | _ -> v
+      in
+      "eval $__fun_result_var=" ^ value_add_backslash v'
+      |> with_indent_lines indent
   | Value v ->
       let v' = gen_value v in
       match v' with

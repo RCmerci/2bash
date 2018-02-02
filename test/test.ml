@@ -199,6 +199,18 @@ let fixture_comment =
   Util.parse "// this is comment\na=1; // another comment\nprintln(a);\n// "
 
 
+(*
+a=[1,2,3];
+b=a@@[4,5,6];
+for (i in b ) {
+   printf("%d ", i);
+}
+ *)
+let fixture_list_concat =
+  Util.parse
+    "a=[1,2,3];\nb=a@@[4,5,6];\nfor (i in b ) {\n   printf(\"%d \", i);\n}"
+
+
 let gen_stats_num_binary _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_ctx () in
@@ -483,6 +495,20 @@ let gen_comment _ =
   assert_equal "1" result
 
 
+let test_list_concat _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_ctx () in
+  let stats =
+    Compile.compile_statements ctx fixture_list_concat
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-list-concat" |> String.concat
+  in
+  assert_equal "1 2 3 4 5 6 " result
+
+
 let suite =
   "suite"
   >::: [ "gen_stats_not_defined" >:: gen_stats_not_defined
@@ -505,7 +531,8 @@ let suite =
        ; "gen_stats_return" >:: gen_stats_return
        ; "gen_stats_value" >:: gen_stats_value
        ; "gen_comment" >:: gen_comment
-       ; "gen_stats_assign" >:: gen_stats_assign ]
+       ; "gen_stats_assign" >:: gen_stats_assign
+       ; "test_list_concat" >:: test_list_concat ]
        @ Builtin_test.suite
 
 

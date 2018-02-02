@@ -20,8 +20,19 @@ let compile =
       let compile_ctx = Compile.make_ctx () in
       let typecheck_ctx = Type_check.make_ctx () in
       let stats' =
-        Compile.compile_statements compile_ctx stats
-        |> Type_check.check_statements typecheck_ctx
+        try
+          Compile.compile_statements compile_ctx stats
+          |> Type_check.check_statements typecheck_ctx
+        with Type_check.Type_err (desc, pos) as e ->
+          Out_channel.print_endline desc ;
+          let open Option in
+          let _ =
+            pos
+            >>= fun pos' ->
+            Out_channel.print_endline (Position.show_position_region pos') ;
+            None
+          in
+          raise e
       in
       let result = Generate.gen_statements stats' 0 in
       let dst' = Out_channel.create dst in

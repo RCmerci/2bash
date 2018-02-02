@@ -81,9 +81,10 @@ statement:
 fun_type:
     | s = SYMBOL; ARROW; sl = fun_type
       {s :: sl}
+    | s = SYMBOL; s1=SYMBOL
+      {[s^" "^s1]}
     | s = SYMBOL
       {[s]}
-
 symbol_list:
     | s = SYMBOL; COMMA; sl = symbol_list
       {s :: sl}
