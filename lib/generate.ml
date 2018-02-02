@@ -285,7 +285,7 @@ let rec gen_statement (v: statement) ~(indent: int) =
       let v' = gen_value v in
       match v' with
       | `Fun_call s -> s "__unused__fun_result_var" |> with_indent_lines indent
-      | _ -> "## " ^ extract v' |> with_indent_lines indent
+      | _ -> ""
 
 
 and gen_statements (v: statements) ~(indent: int) : string list =

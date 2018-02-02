@@ -28,16 +28,7 @@ let sprintf arg_l result_var =
   result_var ^ "=$(" ^ p ^ ")"
 
 
-let call arg_l result_var =
-  let arg_l' = String.substr_replace_all (List.hd_exn arg_l) "\\\"" "\"" in
-  let arg' = String.substr_replace_first arg_l' "\"" "" in
-  let arg'' =
-    String.substr_replace_first
-      ~pos:(String.length arg' - 1)
-      arg' ~pattern:"\"" ~with_:""
-  in
-  result_var ^ "=$(" ^ arg'' ^ ")"
-
+let call arg_l result_var = result_var ^ "=$( eval " ^ List.hd_exn arg_l ^ ")"
 
 let exists arg_l result_var =
   let l1 = Printf.sprintf "[ -f %s ]" (List.hd_exn arg_l) in
