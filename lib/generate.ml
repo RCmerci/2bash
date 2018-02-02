@@ -21,7 +21,7 @@ let eval ?(fun_call_result_var= "") v =
 
 
 let eval_leftvalue (v, tp, is_local) =
-  let v' = match v with `Var v' -> "${" ^ v' ^ "}" | _ -> assert false in
+  let v' = match v with `Var v' -> "${" ^ v' ^ "[@]}" | _ -> assert false in
   (v', tp, is_local)
 
 
@@ -99,7 +99,7 @@ and gen_str_binary_op = function Str_plus -> ""
 
 and gen_str_binary (v: str_binary) =
   match v with
-  | Str s -> `Quote ("\"" ^ String.escaped s ^ "\"")
+  | Str s -> `Quote ("\"" ^ s ^ "\"")
   | Str_binary (op, v1, v2) ->
       let op' = gen_str_binary_op op in
       let v1' = eval @@ gen_str_binary v1 in
@@ -262,15 +262,21 @@ let rec gen_statement (v: statement) ~(indent: int) =
         let open String in
         match prefix v 1 with
         | "(" ->
-            substr_replace_first v "(" "\\("
-            |> substr_replace_first
-                 ~pos:(length v - 1)
-                 ~pattern:")" ~with_:"\\)"
+            let t1 = substr_replace_first v "(" "\\(" in
+            let t2 =
+              substr_replace_first
+                ~pos:(length t1 - 1)
+                t1 ~pattern:")" ~with_:"\\)"
+            in
+            t2
         | "\"" ->
-            substr_replace_first v "\"" "\\\""
-            |> substr_replace_first
-                 ~pos:(length v - 1)
-                 ~pattern:"\"" ~with_:"\\\""
+            let t1 = substr_replace_first v "\"" "\\\"" in
+            let t2 =
+              substr_replace_first
+                ~pos:(length t1 - 1)
+                t1 ~pattern:"\"" ~with_:"\\\""
+            in
+            t2
         | _ -> v
       in
       "eval $__fun_result_var=" ^ value_add_backslash v'

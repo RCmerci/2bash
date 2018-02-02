@@ -4,7 +4,11 @@ open Ir
 exception Built_in_fun_arg_err of string
 
 let printf arg_l result_var =
-  let l1 = String.concat ~sep:" " ("printf" :: arg_l) in
+  let format, arg_l' =
+    match arg_l with a :: b -> (a, b) | _ -> assert false
+  in
+  let arg_l'' = List.map arg_l' ~f:(fun e -> "\"" ^ e ^ "\"") in
+  let l1 = String.concat ~sep:" " (["printf"; format] @ arg_l'') in
   let l2 = result_var ^ "=$?" in
   [l1; l2] |> String.concat ~sep:"\n"
 
@@ -16,17 +20,23 @@ let println arg_l result_var =
 
 
 let sprintf arg_l result_var =
-  let p = String.concat ~sep:" " ("printf" :: arg_l) in
+  let format, arg_l' =
+    match arg_l with a :: b -> (a, b) | _ -> assert false
+  in
+  let arg_l'' = List.map arg_l' ~f:(fun e -> "\"" ^ e ^ "\"") in
+  let p = String.concat ~sep:" " (["printf"; format] @ arg_l'') in
   result_var ^ "=$(" ^ p ^ ")"
 
 
 let call arg_l result_var =
-  let arg =
-    List.hd_exn arg_l
-    |> String.strip ~drop:(fun e ->
-           match e with '"' | ' ' | '\t' -> true | _ -> false )
+  let arg_l' = String.substr_replace_all (List.hd_exn arg_l) "\\\"" "\"" in
+  let arg' = String.substr_replace_first arg_l' "\"" "" in
+  let arg'' =
+    String.substr_replace_first
+      ~pos:(String.length arg' - 1)
+      arg' ~pattern:"\"" ~with_:""
   in
-  result_var ^ "=$(" ^ arg ^ ")"
+  result_var ^ "=$(" ^ arg'' ^ ")"
 
 
 let exists arg_l result_var =

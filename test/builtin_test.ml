@@ -18,6 +18,15 @@ let fixture_sprintf =
 
 
 (*
+a="d e e r t";
+r=sprintf("%s", a);
+println(r);
+ *)
+let fixture_sprintf_2 =
+  Util.parse "a=\"d e e r t\";\nr=sprintf(\"%s\", a);\nprintln(r);"
+
+
+(*
 println(exists("not-exist-file"));
  *)
 
@@ -83,6 +92,20 @@ let test_sprintf _ =
   assert_equal "str, 123, 1" result
 
 
+let test_sprintf_2 _ =
+  let ctx = Compile.make_ctx () in
+  let ctx' = Type_check.make_ctx () in
+  let stats =
+    Compile.compile_statements ctx fixture_sprintf_2
+    |> Type_check.check_statements ctx'
+  in
+  let result =
+    Generate.gen_statements stats 0 |> String.concat
+    |> Util.run_shell ~tmp_file_name:"test-builtin-sprintf-2" |> String.concat
+  in
+  assert_equal "d e e r t" result
+
+
 let test_exists _ =
   let ctx = Compile.make_ctx () in
   let ctx' = Type_check.make_ctx () in
@@ -142,6 +165,7 @@ let test_num _ =
 let suite =
   [ "test_call" >:: test_call
   ; "test_sprintf" >:: test_sprintf
+  ; "test_sprintf_2" >:: test_sprintf_2
   ; "test_exists" >:: test_exists
   ; "test_list" >:: test_list
   ; "test_list_2" >:: test_list_2

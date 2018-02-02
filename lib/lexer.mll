@@ -69,6 +69,7 @@ and read_string buf =
     | '\\' 'n'		{next_token lexbuf;Buffer.add_char buf '\n';read_string buf lexbuf}
     | '\\' 't'		{next_token lexbuf;Buffer.add_char buf '\t';read_string buf lexbuf}
     | '\\' 'r'		{next_token lexbuf;Buffer.add_char buf '\r';read_string buf lexbuf}
+    | '\\' '"'          {next_token lexbuf;Buffer.add_string buf "\\\"";read_string buf lexbuf} 
     | [^ '"' '\\']+	{next_token lexbuf;Buffer.add_string buf (Lexing.lexeme lexbuf); read_string buf lexbuf} 
     | _			{raise (SyntaxError ("illegal string:" ^ Lexing.lexeme lexbuf))}
     | eof		{raise (SyntaxError "string is not terminated")}
