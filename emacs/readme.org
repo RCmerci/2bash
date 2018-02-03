@@ -9,3 +9,8 @@
      (package-install-file "/path/to/2bash-mode.el")
      #+END_SRC
 
+
+
+** Todo
+   - indent support
+   - better code completion
