@@ -94,7 +94,14 @@ fun foo(a, b , c): string-> num -> bool -> string
     - string|bool|num -> num
 
       convert string|bool|num to num
+
+
+** emacs support
+   see also[[https://github.com/RCmerci/2bash/tree/master/emacs][ 2bash-mode]]
+
 ** Todo
     - editor support
+      - +emacs+
+      - vim
     - add `break`, `continue` 
     - +add postion info to compile error+
