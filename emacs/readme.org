@@ -1,0 +1,11 @@
+* 2bash mode
+  emacs major mode for editing .2bash file
+
+** INSTALL
+
+   - git clone
+   - =eval= in emacs:
+     #+BEGIN_SRC 
+     (package-install-file "/path/to/2bash-mode.el")
+     #+END_SRC
+
