@@ -1,6 +1,15 @@
 * 2Bash
   A simple language compiles to bash.
 
+** Build
+*** Linux
+   - git clone 
+   - make
+   - binary location: bundle/default/bin/sbash.exe
+*** macos
+    - git clone
+    - make mac
+    - binary location: _build/default/bin/sbash.exe
 
 ** Syntax
 #+BEGIN_SRC c
@@ -105,3 +114,5 @@ fun foo(a, b , c): string-> num -> bool -> string
       - vim
     - add `break`, `continue` 
     - +add postion info to compile error+
+
+
