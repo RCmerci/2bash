@@ -70,8 +70,63 @@
 
 
 
+(defun 2bash-backward-up-list ()
+  (condition-case nil
+      (backward-up-list)
+    (scan-error nil)))
+
+(defmacro 2bash-in-string-p ()
+  `(nth 3 (syntax-ppss)))
+
+(defmacro 2bash-paren-level ()
+  `(car (syntax-ppss)))
+
+(defmacro 2bash-in-string-or-comment-p ()
+  `(nth 8 (syntax-ppss)))
+
+;;; indent
+(defun 2bash-indentation-at-line-begin ()
+  (save-excursion
+    (back-to-indentation)
+    (let ((origin-line-num (line-number-at-pos))
+	  (origin-paren-level (2bash-paren-level)))
+      (cond ((2bash-in-string-p)
+	     (current-indentation))
+	    ((zerop (2bash-paren-level))
+	     0)
+	    ((looking-at "[])}]")
+	     (2bash-backward-up-list)
+	     (current-indentation))
+	    ((progn (2bash-backward-up-list) (< (2bash-paren-level) origin-paren-level))
+	     (if (= origin-line-num (line-number-at-pos))
+		 (error "it's impossible, because `back-to-indentation' is called before")
+	       (+ (current-indentation) tab-width)))
+	    (t
+	     (current-indentation))
+	    ))))
+
+(defun 2bash-indent-line ()
+  (interactive)
+  (let (result-pos
+	origin-indent
+	(pos (- (point-max) (point)))
+	(origin (point))
+	(beg (line-beginning-position)))
+      (back-to-indentation)
+      (if (2bash-in-string-or-comment-p)
+	  (goto-char origin)
+	(setq indent (2bash-indentation-at-line-begin))
+	(setq origin-indent (current-indentation))
+	(delete-region (line-beginning-position) (point))
+	(indent-to indent))
+
+      (if (> (- (point-max) pos) (point))
+          (goto-char (- (point-max) pos)))
+	)
+  )
 
 
+
 ;; (defun 2bash-compile-current-file ()
 ;;   (interactive)
 ;;   (command-execute "2bash.exe")
@@ -82,7 +137,7 @@
 
 
 
-
+;;;###autoload
 (define-derived-mode 2bash-mode fundamental-mode "2bash"
   "major mode for .2bash file"
   :syntax-table 2bash-syntax-table
@@ -90,15 +145,11 @@
   (setq-local comment-start "// ")
   (setq-local comment-end "")
   (add-hook 'completion-at-point-functions #'2bash-keywords-completion-at-point nil 'local)
+  (setq-local indent-line-function #'2bash-indent-line)
   )
 
-
-
-
-
-
-
-
+;;;###autoload
+(add-to-list 'auto-mode-alist (cons "\\.2bash\\'" '2bash-mode))
 
 
 
