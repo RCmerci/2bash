@@ -1,6 +1,6 @@
 
 opam-version: "1.2"
-name: "bt-lib"
+name: "2bash"
 version: "0.1"
 maintainer: "RCmerci <rcmerci@gmail.com>"
 authors: "RCmerci <rcmerci@gmail.com>"

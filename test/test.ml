@@ -536,16 +536,6 @@ let test_lex_string _ =
   assert_equal "\"\"" result
 
 
-let test_tmp _ =
-  let ctx = Compile.make_ctx () in
-  let ctx' = Type_check.make_ctx () in
-  let stats =
-    Compile.compile_statements ctx fixture_tmp |> Ir.show_statements
-    |> Out_channel.print_endline
-  in
-  assert_equal 1 1
-
-
 let suite =
   "suite"
   >::: [ "gen_stats_not_defined" >:: gen_stats_not_defined
@@ -570,8 +560,7 @@ let suite =
        ; "gen_comment" >:: gen_comment
        ; "gen_stats_assign" >:: gen_stats_assign
        ; "test_list_concat" >:: test_list_concat
-       ; "test_lex_string" >:: test_lex_string
-       ; "test_tmp" >:: test_tmp ]
+       ; "test_lex_string" >:: test_lex_string ]
        @ Builtin_test.suite
 
 

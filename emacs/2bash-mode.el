@@ -4,7 +4,7 @@
 
 ;; Author: RCmerci <RCmerci@rcmerci@gmail.com>
 ;; Keywords: languages
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "24.4") (s "20160508.2357"))
 ;; Version: 20180203.1
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 ;;
 
 ;;; Code:
-
+(require 's)
 
 (defconst 2bash-syntax-table
   (let ((table (make-syntax-table)))
@@ -127,12 +127,20 @@
 
 
 
-;; (defun 2bash-compile-current-file ()
-;;   (interactive)
-;;   (command-execute "2bash.exe")
+(defun 2bash-compile-current-file ()
+  (interactive)
+  (let ((cmd (executable-find "sbash.exe"))
+	(output-filename (s-concat (s-chop-suffix ".2bash" buffer-file-name) ".sh")))
+    (compilation-start (format "%s compile %s -o %s" cmd buffer-file-name output-filename))))
 
-;;   )
 
+
+;;; keymap
+(defvar 2bash-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "C-c C-c") #'2bash-compile-current-file)
+    m)
+  "Keymap used by `2bash-mode'.")
 
 
 
