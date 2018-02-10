@@ -442,6 +442,8 @@ and check_statement ctx s =
                 check_statements ctx stats ) )
       in
       Fun_def (fun_name, argl, stats', fun_tp)
+  | Break v -> Break v
+  | Continue v -> Continue v
 
 
 and check_statements ctx ss =

@@ -73,6 +73,8 @@ and statement =
   | Fun_def of (string * string list * statements * fun_tp)
   | Return of value
   | Value of value
+  | Break of {meta: meta}
+  | Continue of {meta: meta}
   [@@deriving show]
 
 and statements = statement list [@@deriving show]

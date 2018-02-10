@@ -281,11 +281,13 @@ let rec gen_statement (v: statement) ~(indent: int) =
       in
       "eval $__fun_result_var=" ^ value_add_backslash v'
       |> with_indent_lines indent
-  | Value v ->
+  | Value v -> (
       let v' = gen_value v in
       match v' with
       | `Fun_call s -> s "__unused__fun_result_var" |> with_indent_lines indent
-      | _ -> ""
+      | _ -> "" )
+  | Break _ -> "break" |> with_indent_lines indent
+  | Continue _ -> "continue" |> with_indent_lines indent
 
 
 and gen_statements (v: statements) ~(indent: int) : string list =

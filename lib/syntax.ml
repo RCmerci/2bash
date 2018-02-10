@@ -49,6 +49,8 @@ type statement =
   | Function of (symbol * symbol list * statements * string list)
   | Return of value
   | Value of value
+  | Break of {pos: Position.position_region}
+  | Continue of {pos: Position.position_region}
   [@@deriving show]
 
 and statements = statement list [@@deriving show]
@@ -83,6 +85,8 @@ type token =
   | IF
   | ELSE
   | WHILE
+  | BREAK
+  | CONTINUE
   | FOR
   | IN
   | RETURN

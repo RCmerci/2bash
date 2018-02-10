@@ -35,6 +35,8 @@ open Syntax
 %token FOR
 %token IN
 %token RETURN
+%token BREAK
+%token CONTINUE
 %token COMMA
 %token ARROW
 %token COLON
@@ -75,8 +77,13 @@ statement:
       {Function (n, s, s1, t)}
     | RETURN; v = value; SEMICOLON
       {Return v}
+    | BREAK; SEMICOLON
+      {Break {pos={start_pos=$startpos;end_pos=$endpos}}}
+    | CONTINUE; SEMICOLON
+      {Continue {pos={start_pos=$startpos;end_pos=$endpos}}}
     | v = value; SEMICOLON
       {Value v}
+      
 ;
 fun_type:
     | s = SYMBOL; ARROW; sl = fun_type

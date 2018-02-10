@@ -21,46 +21,48 @@ let symbol = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
 rule read =
      parse
-     | white	{next_token lexbuf; read lexbuf}
-     | newline	{next_line lexbuf; read lexbuf}
-     | "true"	{next_token lexbuf;TRUE}
-     | "false"	{next_token lexbuf;FALSE}
-     | int	{next_token lexbuf;INT (int_of_string (Lexing.lexeme lexbuf))}
-     | '['	{next_token lexbuf;LBRACKET}
-     | ']'	{next_token lexbuf;RBRACKET}
-     | '('	{next_token lexbuf;LPAREN}
-     | ')'	{next_token lexbuf;RPAREN}
-     | '{'      {next_token lexbuf;LBRACE}
-     | '}'	{next_token lexbuf;RBRACE}
-     | ','	{next_token lexbuf;COMMA}
-     | '+'	{next_token lexbuf;PLUS}
-     | "++"     {next_token lexbuf;STRING_PLUS}
-     | "@@"     {next_token lexbuf;LIST_PLUS}
-     | '-'	{next_token lexbuf;MINUS}
-     | '*'	{next_token lexbuf;MUL}
-     | '/'	{next_token lexbuf;DIV}
-     | ';'	{next_token lexbuf;SEMICOLON}
-     | '"'      {next_token lexbuf;read_string (Buffer.create 15) lexbuf }
-     | "//"	{next_token lexbuf;read_comment lexbuf}
-     | ">="	{next_token lexbuf;GE}
-     | "<="	{next_token lexbuf;LE}
-     | "<>"	{next_token lexbuf;NEQ}
-     | "!="	{next_token lexbuf;NEQ}
-     | ">"	{next_token lexbuf;GT}
-     | "<"	{next_token lexbuf;LT}
-     | "=="	{next_token lexbuf;EQ}
-     | '=' 	{next_token lexbuf;ASSIGN}
-     | "->"     {next_token lexbuf;ARROW}
-     | ':' 	{next_token lexbuf;COLON}
-     | "fun"    {next_token lexbuf;FUNCTION}
-     | "if"    	{next_token lexbuf;IF}
-     | "else" 	{next_token lexbuf;ELSE}
-     | "while"	{next_token lexbuf;WHILE}
-     | "for"	{next_token lexbuf;FOR}
-     | "in"	{next_token lexbuf;IN}
-     | "return" {next_token lexbuf;RETURN}
-     | symbol   {next_token lexbuf;SYMBOL (Lexing.lexeme lexbuf)}
-     | eof	{lexbuf.lex_eof_reached<-true; EOF}
+     | white		{next_token lexbuf; read lexbuf}
+     | newline		{next_line lexbuf; read lexbuf}
+     | "true"		{next_token lexbuf;TRUE}
+     | "false"		{next_token lexbuf;FALSE}
+     | int		{next_token lexbuf;INT (int_of_string (Lexing.lexeme lexbuf))}
+     | '['		{next_token lexbuf;LBRACKET}
+     | ']'		{next_token lexbuf;RBRACKET}
+     | '('		{next_token lexbuf;LPAREN}
+     | ')'		{next_token lexbuf;RPAREN}
+     | '{'		{next_token lexbuf;LBRACE}
+     | '}'		{next_token lexbuf;RBRACE}
+     | ','		{next_token lexbuf;COMMA}
+     | '+'		{next_token lexbuf;PLUS}
+     | "++"		{next_token lexbuf;STRING_PLUS}
+     | "@@"		{next_token lexbuf;LIST_PLUS}
+     | '-'		{next_token lexbuf;MINUS}
+     | '*'		{next_token lexbuf;MUL}
+     | '/'		{next_token lexbuf;DIV}
+     | ';'		{next_token lexbuf;SEMICOLON}
+     | '"'		{next_token lexbuf;read_string (Buffer.create 15) lexbuf }
+     | "//"		{next_token lexbuf;read_comment lexbuf}
+     | ">="		{next_token lexbuf;GE}
+     | "<="		{next_token lexbuf;LE}
+     | "<>"		{next_token lexbuf;NEQ}
+     | "!="		{next_token lexbuf;NEQ}
+     | ">"		{next_token lexbuf;GT}
+     | "<"		{next_token lexbuf;LT}
+     | "=="		{next_token lexbuf;EQ}
+     | '='		{next_token lexbuf;ASSIGN}
+     | "->"		{next_token lexbuf;ARROW}
+     | ':'		{next_token lexbuf;COLON}
+     | "fun"		{next_token lexbuf;FUNCTION}
+     | "if"		{next_token lexbuf;IF}
+     | "else"		{next_token lexbuf;ELSE}
+     | "while"		{next_token lexbuf;WHILE}
+     | "break"		{next_token lexbuf;BREAK}
+     | "continue"	{next_token lexbuf;CONTINUE}
+     | "for"		{next_token lexbuf;FOR}
+     | "in"		{next_token lexbuf;IN}
+     | "return"		{next_token lexbuf;RETURN}
+     | symbol		{next_token lexbuf;SYMBOL (Lexing.lexeme lexbuf)}
+     | eof	        {lexbuf.lex_eof_reached<-true; EOF}
      
 and read_string buf =
     parse

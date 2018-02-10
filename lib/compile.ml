@@ -7,13 +7,14 @@ type context =
   { mutable scope: Ir.statement Scope.ListScope.t
   ; mutable local_vars: unit Scope.StrMapScope.t
   ; mutable gen_var: int
-  ; mutable result_statements: Ir.statement list }
+  ; mutable while_loop_statements: Ir.statement Scope.ListScope.t
+  (* ; mutable result_statements: Ir.statement list *) }
 
 let make_ctx () =
   { scope= Scope.ListScope.make ()
-  ; gen_var= 0
-  ; result_statements= []
-  ; local_vars= Scope.StrMapScope.make () }
+  ; gen_var= 0 (* ; result_statements= [] *)
+  ; local_vars= Scope.StrMapScope.make ()
+  ; while_loop_statements= Scope.ListScope.make () }
 
 
 let new_scope ctx =
@@ -35,11 +36,6 @@ let add_statement ctx stat = Scope.ListScope.add ctx.scope () stat
 
 let get_statements ctx = Scope.ListScope.level_values ctx.scope |> List.rev
 
-let emit_statements ctx =
-  let level_values = Scope.ListScope.level_values ctx.scope in
-  ctx.result_statements <- ctx.result_statements @ List.rev level_values
-
-
 let generate_tmp_var ctx =
   let origin = ctx.gen_var in
   let () = ctx.gen_var <- ctx.gen_var + 1 in
@@ -53,6 +49,26 @@ let add_local_vars ctx vars =
 
 let is_local_var ctx var =
   Option.is_some (Scope.StrMapScope.find ctx.local_vars var)
+
+
+let with_while_loop_statements ctx statements (f: unit -> 'a) : 'a =
+  let origin = ctx.while_loop_statements in
+  let () =
+    ctx.while_loop_statements
+    <- Scope.ListScope.new_level ctx.while_loop_statements
+  in
+  let () =
+    List.map statements ~f:(fun s ->
+        Scope.ListScope.add ctx.while_loop_statements () s )
+    |> ignore
+  in
+  let r = f () in
+  let () = ctx.while_loop_statements <- origin in
+  r
+
+
+let get_while_loop_statements ctx =
+  Scope.ListScope.level_values ctx.while_loop_statements
 
 
 let string_to_tp s =
@@ -263,7 +279,10 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
     | While (value, statements) ->
         let loop_value = compile_value ctx value in
         let loop_statements = get_statements ctx in
-        let statements' = compile_statements ctx statements in
+        let statements' =
+          with_while_loop_statements ctx loop_statements (fun () ->
+              compile_statements ctx statements )
+        in
         (* here append loop_statements in WHILE body because
            the WHOLE loop_value is separated into LOOP_VALUE and LOOP_STATEMENTS
          *)
@@ -300,6 +319,12 @@ let rec compile_statement ctx (statement: statement) : Ir.statements =
         let value' = compile_value ctx value in
         let statements = get_statements ctx in
         statements @ [Ir.Value value']
+    | Break {pos} ->
+        let loop_statements = get_while_loop_statements ctx in
+        loop_statements @ [Ir.Break {meta= {pos= Some pos}}]
+    | Continue {pos} ->
+        let loop_statements = get_while_loop_statements ctx in
+        loop_statements @ [Ir.Continue {meta= {pos= Some pos}}]
   in
   with_scope ctx f
 
