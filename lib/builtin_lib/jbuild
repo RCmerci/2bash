@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+ ((name sbash_builtin_lib)
+  (libraries (core sbash_type))
+  ))

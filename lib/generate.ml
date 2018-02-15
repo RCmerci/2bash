@@ -1,5 +1,6 @@
 open Core
-open Ir
+open Sbash_type
+open Sbash_type.Ir
 
 exception Generate_error of string
 
@@ -12,11 +13,11 @@ type generated =
   | `Fun_call of string -> string ]
   [@@deriving show]
 
-let eval ?(fun_call_result_var= "") v =
+let eval ?(result_var= "") v =
   match v with
   | `Quote v' -> v'
   | `Var v' -> "${" ^ v' ^ "[@]}"
-  | `Fun_call v' -> v' fun_call_result_var
+  | `Fun_call v' -> v' result_var
   | `Raw v' -> "$(" ^ v' ^ ")"
 
 
@@ -99,7 +100,7 @@ and gen_str_binary_op = function Str_plus -> ""
 
 and gen_str_binary (v: str_binary) =
   match v with
-  | Str s -> `Quote ("\"" ^ s ^ "\"")
+  | Str s -> `Quote s
   | Str_binary (op, v1, v2) ->
       let op' = gen_str_binary_op op in
       let v1' = eval @@ gen_str_binary v1 in
@@ -213,7 +214,7 @@ let rec gen_statement (v: statement) ~(indent: int) =
       let v' = gen_value v in
       match v' with
       | `Fun_call _ ->
-          let v'' = eval ~fun_call_result_var:lv' v' in
+          let v'' = eval ~result_var:lv' v' in
           v'' |> with_indent_lines indent
       | _ -> lv' ^ "=" ^ eval v' |> with_indent_lines indent )
   | If (v, stats) ->
@@ -292,3 +293,6 @@ let rec gen_statement (v: statement) ~(indent: int) =
 
 and gen_statements (v: statements) ~(indent: int) : string list =
   List.fold v ~init:[] ~f:(fun r e -> gen_statement e indent :: r) |> List.rev
+
+
+let gen_init_statements = ["IFS=$'\n'"]

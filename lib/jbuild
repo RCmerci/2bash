@@ -13,6 +13,8 @@
 (library
  ((name sbash_lib)
   (libraries (core
+  	      sbash_builtin_lib
+	      sbash_type
   	      ppx_deriving.std))
   (preprocess (pps (ppx_deriving.std)))
   ))

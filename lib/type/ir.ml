@@ -8,11 +8,11 @@ type tp =
   | Unknown_type
   [@@deriving show]
 
-(* Indefinite:
+(* Infinite:
    e.g. printf
  *)
 type fun_tp =
-  [`Normal of tp list list * tp | `Indefinite of tp list list * tp]
+  [`Normal of tp list list * tp | `Infinite of tp list list * tp]
   [@@deriving show]
 
 type num_binary =

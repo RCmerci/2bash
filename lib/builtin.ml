@@ -1,14 +1,11 @@
 open Core
-open Ir
-
-exception Built_in_fun_arg_err of string
+open Sbash_type.Ir
 
 let printf arg_l result_var =
   let format, arg_l' =
     match arg_l with a :: b -> (a, b) | _ -> assert false
   in
-  let arg_l'' = List.map arg_l' ~f:(fun e -> "\"" ^ e ^ "\"") in
-  let l1 = String.concat ~sep:" " (["printf"; format] @ arg_l'') in
+  let l1 = String.concat ~sep:" " (["printf"; format] @ arg_l') in
   let l2 = result_var ^ "=$?" in
   [l1; l2] |> String.concat ~sep:"\n"
 
@@ -49,9 +46,9 @@ let num arg_l result_var =
 
 
 let builtin_fun_l =
-  [ ("printf", printf, `Indefinite ([[Str_type]], Num_type))
+  [ ("printf", printf, `Infinite ([[Str_type]], Num_type))
   ; ("println", println, `Normal ([[Str_type; Num_type; Bool_type]], Num_type))
-  ; ("sprintf", sprintf, `Indefinite ([[Str_type]], Str_type))
+  ; ("sprintf", sprintf, `Infinite ([[Str_type]], Str_type))
   ; ("call", call, `Normal ([[Str_type]], Str_type))
   ; ("exists", exists, `Normal ([[Str_type]], Bool_type))
   ; ( "list"
@@ -60,7 +57,7 @@ let builtin_fun_l =
   ; ("num", num, `Normal ([[Str_type; Bool_type; Num_type]], Num_type)) ]
 
 
-let gen name args =
+let gen ~name ~args =
   let open Option in
   List.find builtin_fun_l ~f:(fun (name', _, _) -> name = name')
   >>= fun (_, f, _) -> return @@ f args

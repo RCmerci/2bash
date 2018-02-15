@@ -1,3 +1,5 @@
+open Sbash_type
+
 type symbol = string [@@deriving show]
 
 type num = int [@@deriving show]

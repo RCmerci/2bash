@@ -34,9 +34,10 @@ let compile =
           in
           raise e
       in
+      let init_statements = Generate.gen_init_statements in
       let result = Generate.gen_statements stats' 0 in
       let dst' = Out_channel.create dst in
-      Out_channel.output_lines dst' result )
+      Out_channel.output_lines dst' (init_statements @ result) )
 
 
 let group = Command.group ~summary:"" [("compile", compile)]

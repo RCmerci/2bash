@@ -1,0 +1,11 @@
+(jbuild_version 1)
+
+(library
+ ((name sbash_type)
+  (libraries (core
+  	      ppx_deriving.std))
+  (preprocess (pps (ppx_deriving.std)))
+  ))
+
+
+

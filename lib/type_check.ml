@@ -1,5 +1,6 @@
 open Core
-open Ir
+open Sbash_type
+open Sbash_type.Ir
 module S = Scope.StrMapScope
 
 type context =
@@ -180,7 +181,7 @@ let rec get_value_tp ctx v =
                 expect_tp ~name:desc (get_value_tp ctx a) b )
             |> ignore ;
             r
-        | `Indefinite (argl, r) ->
+        | `Infinite (argl, r) ->
             if List.length argl > List.length vl then
               raise
                 (Type_err

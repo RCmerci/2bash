@@ -7,6 +7,7 @@ shell: build
 build:
 	docker build -t "2bash" .
 mac:
-	jbuild build
+	jbuilder build
+.PHONY: test
 test:
-	jbuild runtest
+	jbuilder runtest

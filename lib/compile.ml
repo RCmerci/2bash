@@ -1,5 +1,6 @@
 open Core
 open Syntax
+open Sbash_type
 
 exception Compile_err of string
 

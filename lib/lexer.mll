@@ -1,6 +1,7 @@
 {
 open Lexing
 open Syntax
+open Sbash_type.Position
 open Position
 exception SyntaxError of string
 }
@@ -66,7 +67,7 @@ rule read =
      
 and read_string buf =
     parse
-    | '"'		{next_token lexbuf;STRING (Buffer.contents buf)}
+    | '"'		{next_token lexbuf;Buffer.add_string buf "\"";STRING ("\"" ^ (Buffer.contents buf))}
     | '\\' '\\'		{next_token lexbuf;Buffer.add_string buf "\\\\";read_string buf lexbuf}
     | '\\' 'n'		{next_token lexbuf;Buffer.add_string buf "\\n";read_string buf lexbuf}
     | '\\' 't'		{next_token lexbuf;Buffer.add_string buf "\\t";read_string buf lexbuf}
