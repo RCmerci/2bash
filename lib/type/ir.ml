@@ -26,6 +26,7 @@ and num_binary_op = Plus | Minus | Mul | Div [@@deriving show]
 and leftvalue =
   (* (name, type, local) *)
   | Identifier of {v: (string * tp * bool); meta: meta}
+  (* tp: elem type *)
   | ListAccess of {v: ((leftvalue * num_binary) * tp); meta: meta}
   [@@deriving show]
 
@@ -75,6 +76,7 @@ and statement =
   | Value of value
   | Break of {meta: meta}
   | Continue of {meta: meta}
+  | SwitchIFS of string
   [@@deriving show]
 
 and statements = statement list [@@deriving show]

@@ -1,5 +1,6 @@
 open Core
 open Sbash_lib
+open Sbash_type
 
 let print_pos (lexbuf: Lexing.lexbuf) =
   let p = lexbuf.lex_curr_p in

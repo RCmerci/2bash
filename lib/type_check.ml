@@ -445,6 +445,7 @@ and check_statement ctx s =
       Fun_def (fun_name, argl, stats', fun_tp)
   | Break v -> Break v
   | Continue v -> Continue v
+  | SwitchIFS _ as v -> v
 
 
 and check_statements ctx ss =

@@ -28,9 +28,10 @@ module ListContent = struct
   let data r = r
 end
 
-module StringMapContent = struct
-  module StrMap = Map.Make_plain (String)
+module StrMap = Map.Make_plain (String)
+include StrMap
 
+module StringMapContent = struct
   type 'a t = 'a StrMap.t
 
   type key = StrMap.Key.t
@@ -44,8 +45,48 @@ module StringMapContent = struct
   let data r = StrMap.data r
 end
 
+module OneElemContent = struct
+  type 'a t = 'a option
+
+  type key = unit
+
+  let empty = None
+
+  let add r key data = Some data
+
+  let find r key = r
+
+  let data r = Option.to_list r
+end
+
+module type S = sig
+  type 'a content
+
+  type content_key
+
+  type 'a t
+
+  val make : unit -> 'a t
+
+  val new_level : 'a t -> 'a t
+
+  val add : 'a t -> content_key -> 'a -> unit
+
+  val find : 'a t -> content_key -> ('a * 'a t) option
+
+  val find_local : 'a t -> content_key -> ('a * 'a t) Core.Option.t
+
+  val update : 'a t -> content_key -> 'a -> 'a t Core.Option.t
+
+  val level_values : 'a t -> 'a list
+end
+
 module Make (Content : Content) = struct
-  type 'a t = {mutable map: 'a Content.t; upper: 'a t option}
+  type 'a content = 'a Content.t
+
+  type content_key = Content.key
+
+  type 'a t = {mutable map: 'a content; upper: 'a t option}
 
   let make () = {map= Content.empty; upper= None}
 
@@ -85,3 +126,4 @@ end
 
 module ListScope = Make (ListContent)
 module StrMapScope = Make (StringMapContent)
+module OneElemScope = Make (OneElemContent)

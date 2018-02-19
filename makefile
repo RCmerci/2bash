@@ -11,3 +11,6 @@ mac:
 .PHONY: test
 test:
 	jbuilder runtest
+
+mac_install: mac
+	cp _build/default/bin/sbash.exe /usr/local/bin/sbash.exe

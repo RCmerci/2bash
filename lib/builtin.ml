@@ -20,8 +20,8 @@ let sprintf arg_l result_var =
   let format, arg_l' =
     match arg_l with a :: b -> (a, b) | _ -> assert false
   in
-  let arg_l'' = List.map arg_l' ~f:(fun e -> "\"" ^ e ^ "\"") in
-  let p = String.concat ~sep:" " (["printf"; format] @ arg_l'') in
+  (* let arg_l'' = List.map arg_l' ~f:(fun e -> "\"" ^ e ^ "\"") in *)
+  let p = String.concat ~sep:" " (["printf"; format] @ arg_l') in
   result_var ^ "=$(" ^ p ^ ")"
 
 

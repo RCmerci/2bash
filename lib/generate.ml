@@ -17,27 +17,26 @@ let eval ?(result_var= "") v =
   match v with
   | `Quote v' -> v'
   | `Var v' -> "${" ^ v' ^ "[@]}"
+  | `Str_var v' -> "\"${" ^ v' ^ "[@]}\""
   | `Fun_call v' -> v' result_var
   | `Raw v' -> "$(" ^ v' ^ ")"
 
 
 let eval_leftvalue (v, tp, is_local) =
-  let v' = match v with `Var v' -> "${" ^ v' ^ "[@]}" | _ -> assert false in
+  let v' =
+    match v with
+    | `Var v' -> "${" ^ v' ^ "[@]}"
+    | `Str_var v' -> "\"${" ^ v' ^ "[@]}\""
+    | _ -> assert false
+  in
   (v', tp, is_local)
-
-
-let extract v =
-  match v with
-  | `Quote v -> v
-  | `Var v -> v
-  | `Fun_call v -> v "???"
-  | `Raw v -> v
 
 
 let extract_leftvalue (v, tp, is_local) =
   match v with
   | `Quote v -> v
   | `Var v -> v
+  | `Str_var v -> v
   | `Fun_call v -> v "???"
   | `Raw v -> v
 
@@ -66,11 +65,14 @@ let gen_bool_bool_binary_op = gen_num_bool_binary_op
 
 let rec gen_leftvalue (v: leftvalue) =
   match v with
-  | Identifier {v= s, tp, is_local} -> (`Var s, tp, is_local)
+  | Identifier {v= s, tp, is_local} ->
+      if tp = Str_type then (`Str_var s, tp, is_local)
+      else (`Var s, tp, is_local)
   | ListAccess {v= (lv, num), tp} ->
       let lv', _, is_local = eval_leftvalue @@ gen_leftvalue lv in
       let num' = eval @@ gen_num_binary num in
-      (`Var (lv' ^ "[" ^ num' ^ "]"), tp, is_local)
+      if tp = Str_type then (`Str_var (lv' ^ "[" ^ num' ^ "]"), tp, is_local)
+      else (`Var (lv' ^ "[" ^ num' ^ "]"), tp, is_local)
 
 
 and gen_num_binary_op = function
@@ -158,11 +160,11 @@ and gen_list_binary (v: list_binary) =
   | List_binary (op, v1, v2) ->
       let v1' = eval @@ gen_list_binary v1 in
       let v2' = eval @@ gen_list_binary v2 in
-      `Quote ("(${" ^ v1' ^ "[@]} " ^ "${" ^ v2' ^ "[@]})")
+      `Quote ("(" ^ v1' ^ " " ^ v2' ^ ")")
   | List_leftvalue_binary (op, v1, v2) ->
-      let v1' = extract_leftvalue @@ gen_leftvalue v1 in
-      let v2' = extract_leftvalue @@ gen_leftvalue v2 in
-      `Quote ("(${" ^ v1' ^ "[@]} " ^ "${" ^ v2' ^ "[@]})")
+      let v1', _, _ = eval_leftvalue @@ gen_leftvalue v1 in
+      let v2', _, _ = eval_leftvalue @@ gen_leftvalue v2 in
+      `Quote ("(" ^ v1' ^ " " ^ v2' ^ ")")
 
 
 and gen_value (v: value) =
@@ -289,10 +291,8 @@ let rec gen_statement (v: statement) ~(indent: int) =
       | _ -> "" )
   | Break _ -> "break" |> with_indent_lines indent
   | Continue _ -> "continue" |> with_indent_lines indent
+  | SwitchIFS s -> "IFS=" ^ s |> with_indent_lines indent
 
 
 and gen_statements (v: statements) ~(indent: int) : string list =
   List.fold v ~init:[] ~f:(fun r e -> gen_statement e indent :: r) |> List.rev
-
-
-let gen_init_statements = ["IFS=$'\n'"]
